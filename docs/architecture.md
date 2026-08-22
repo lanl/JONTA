@@ -29,13 +29,16 @@ jonta/
 ├── README.md
 ├── AGENTS.md
 ├── pyproject.toml
+├── benchmark_results/
 ├── docs/
 │   ├── architecture.md
+│   ├── benchmarks.md
 │   ├── code_map.md
 │   ├── conventions.md
 │   ├── numerics.md
 │   ├── physics.md
-│   └── validation.md
+│   ├── validation.md
+│   └── agent_workflow.md
 ├── src/
 │   ├── boundaries/
 │   ├── collisions/

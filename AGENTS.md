@@ -30,6 +30,8 @@ Do not violate these without an explicit design decision documented in `docs/arc
 - Large-angle avalanche physics is a linearized conservative Møller gain-loss model by default, not a source-only branching model.
 - Particle, large-angle, plasma-coupling, and diagnostics cadences are independent.
 - Plasma/Ohm coupling is a separate multiphysics layer; BDF2 is the reference implicit scheme.
+- Serial and particle-sharded execution are explicit `ExecutionConfig` modes; serial is the trusted reference.
+- Parallel particle evolution must not be enabled with large-angle population control until a distributed global resampler is implemented.
 - High-level orchestration contains as little physics as possible.
 
 ## 3. Directory responsibilities
@@ -50,6 +52,9 @@ Do not violate these without an explicit design decision documented in `docs/arc
 - `src/simulation.py`: composition/orchestration of the above modules.
 
 Lower-level modules must not import `simulation.py` or examples.
+
+The concise LLM entry workflow, task-routing table, validation ladder, benchmark
+policy, and handoff checklist are in `docs/agent_workflow.md`.
 
 ## 4. JAX and accelerator rules
 
@@ -118,7 +123,10 @@ Keep these synchronized with code:
 - `docs/conventions.md`: normalization, signs, units, state layout;
 - `docs/architecture.md`: module/data flow and dependency rules;
 - `docs/validation.md`: benchmark definitions and acceptance strategy;
-- `docs/code_map.md`: equation-to-implementation map.
+- `docs/code_map.md`: equation-to-implementation map;
+- `docs/installation.md`: supported environment setup;
+- `docs/benchmarks.md`: reproducible benchmark commands and artifact policy.
+- `docs/agent_workflow.md`: LLM task routing, execution modes, validation, and handoff.
 
 ## 10. Agent workflow
 

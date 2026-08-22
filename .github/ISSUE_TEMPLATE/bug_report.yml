@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible defect in code, tests, documentation, or benchmark tooling
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the command, commit, backend, precision, and smallest useful case.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python, JAX, OS, CPU/GPU, and relevant device count.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output
+      description: Paste concise logs or attach a minimal artifact. Remove secrets and private data.

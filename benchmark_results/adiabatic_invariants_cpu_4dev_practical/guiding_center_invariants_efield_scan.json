@@ -1,0 +1,36 @@
+{
+  "benchmark": "guiding_center_invariants",
+  "scan_type": "custom_grid",
+  "electric_fields_E1_over_Ec": [
+    0.0,
+    10.0,
+    10000.0
+  ],
+  "timesteps_dt_over_tau_c_requested": [
+    2.56e-07,
+    6.4e-08,
+    1.6e-08
+  ],
+  "final_time_over_tau_c": 1e-05,
+  "n_particles": 8,
+  "q_profile": "constant q=2.1",
+  "integrators": [
+    "midpoint/RK2",
+    "RK4"
+  ],
+  "jax_backend": "cpu",
+  "jax_devices": [
+    "cpu:0"
+  ],
+  "runtime": {
+    "python": "3.12.10",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "jax": "0.11.1",
+    "jaxlib": "0.11.1",
+    "numpy": "2.5.2",
+    "jax_enable_x64": true
+  },
+  "git_commit": "a0433d67dd7a7a94acb0caf12a2a41829337b6d8",
+  "git_dirty": true,
+  "interpretation": "E1/Ec=0 is a non-logarithmic anchor; positive fields are decade-spaced. The timestep sequence is a four-fold refinement scan followed by a 1e-10 tau_c floating-point-floor probe."
+}

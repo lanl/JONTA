@@ -40,6 +40,9 @@ import argparse
 import csv
 import json
 import math
+import platform
+import subprocess
+import sys
 from pathlib import Path
 
 import jax
@@ -353,7 +356,7 @@ def test_rk4_guiding_center_invariants_extreme_electric_field_scan_remains_finit
 
 def _write_csv(path: Path, datasets):
     with path.open("w", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerow(
             [
                 "integrator",
@@ -517,6 +520,36 @@ def _print_scan_summary(datasets):
 def _write_metadata(path: Path, args, q2: float):
     """Write the exact requested scan so result directories are self-describing."""
 
+    repo_root = Path(__file__).resolve().parents[2]
+    try:
+        git_commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        git_dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        )
+    except (OSError, subprocess.CalledProcessError):
+        git_commit = "unknown"
+        git_dirty = None
+
+    def package_version(name):
+        try:
+            from importlib.metadata import version
+
+            return version(name)
+        except Exception:  # pragma: no cover - depends on installation context
+            return "unknown"
+
     payload = {
         "benchmark": "guiding_center_invariants",
         "scan_type": (
@@ -533,6 +566,16 @@ def _write_metadata(path: Path, args, q2: float):
         "integrators": ["midpoint/RK2", "RK4"],
         "jax_backend": jax.default_backend(),
         "jax_devices": [str(device) for device in jax.devices()],
+        "runtime": {
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "jax": package_version("jax"),
+            "jaxlib": package_version("jaxlib"),
+            "numpy": package_version("numpy"),
+            "jax_enable_x64": bool(jax.config.read("jax_enable_x64")),
+        },
+        "git_commit": git_commit,
+        "git_dirty": git_dirty,
         "interpretation": (
             "E1/Ec=0 is a non-logarithmic anchor; positive fields are decade-spaced. "
             "The timestep sequence is a four-fold refinement scan followed by a "

@@ -2,6 +2,9 @@
 
 JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for runaway electrons.
 
+JONTA is released under the [MIT License](LICENSE). Public contribution,
+security, citation, and reproducibility guidance is linked below.
+
 ## Goals
 
 JONTA is designed for:
@@ -67,13 +70,24 @@ plasma-coupling cadence dt_c
 jonta/
 ├── README.md
 ├── AGENTS.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+├── CITATION.cff
+├── CHANGELOG.md
 ├── pyproject.toml
+├── .github/
+├── benchmark_results/
 ├── docs/
 │   ├── architecture.md
+│   ├── agent_workflow.md
+│   ├── benchmarks.md
 │   ├── code_map.md
 │   ├── conventions.md
 │   ├── numerics.md
 │   ├── physics.md
+│   ├── installation.md
 │   └── validation.md
 ├── src/
 │   ├── boundaries/
@@ -106,7 +120,10 @@ Read these in roughly this order:
 - [`docs/numerics.md`](docs/numerics.md) — Monte Carlo realization, timestepping, resampling, deposition, BDF2, and coupling algorithms.
 - [`docs/conventions.md`](docs/conventions.md) — normalization, signs, units, FP64, coordinates, and array layout.
 - [`docs/validation.md`](docs/validation.md) — required unit, convergence, RAMc, physics, and performance tests.
+- [`docs/installation.md`](docs/installation.md) — CPU/CUDA setup and environment verification.
+- [`docs/benchmarks.md`](docs/benchmarks.md) — reproducible benchmark commands and result policy.
 - [`docs/code_map.md`](docs/code_map.md) — equation/model-to-source navigation map.
+- [`docs/agent_workflow.md`](docs/agent_workflow.md) — LLM task routing, execution modes, validation ladder, and handoff contract.
 - [`AGENTS.md`](AGENTS.md) — repository-wide rules for human and LLM-assisted development.
 
 ## Getting started
@@ -151,7 +168,8 @@ silicon or a supported FP64 accelerator such as CUDA, and record the backend.
 
 The explicit `PYTHONPATH` is useful when working directly from a checkout; an editable install also exposes the packages under `src/`.
 
-Reference examples:
+Current developer/reference scripts (not yet the polished end-to-end public
+quickstart):
 
 ```bash
 PYTHONPATH=src python examples/zero_d_runaway.py

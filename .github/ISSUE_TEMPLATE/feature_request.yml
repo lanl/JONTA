@@ -1,0 +1,26 @@
+name: Feature request
+description: Propose a physics, numerical, execution, documentation, or tooling improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What scientific or engineering need does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the intended API, equations, workflow, or documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: What unit, convergence, statistical, benchmark, or performance evidence is required?
+    validations:
+      required: true

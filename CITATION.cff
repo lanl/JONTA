@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use JONTA, please cite the repository and the relevant physics references."
+title: "JONTA: JAX kinetic Monte Carlo for runaway electrons"
+type: software
+license: MIT
+version: "0.1.0"
+date-released: "2026-08-22"
+keywords:
+  - runaway electrons
+  - kinetic Monte Carlo
+  - JAX
+  - plasma physics
+  - tokamak
+authors:
+  - name: "JONTA contributors"
