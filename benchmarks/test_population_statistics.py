@@ -1,8 +1,9 @@
-"""Statistical validation of JONTA's fixed-N branching representation.
+"""Statistical validation of JONTA's fixed-capacity branching representation.
 
-The production avalanche algorithm keeps a fixed number of marker slots while
+The production avalanche algorithm keeps fixed-capacity marker slots while
 physical population growth is carried by marker weight.  Candidate gain/loss
-ensembles are randomly thinned with the production stratified resampler.
+ensembles compact into capacity and overflow-thin with the production
+stratified resampler.
 
 This file validates the statistical design at two levels:
 
@@ -10,7 +11,7 @@ This file validates the statistical design at two levels:
 2. the published McDevitt-2019 Appendix Fig. B3(a) avalanche growth rate.
 
 Uncertainties are always estimated from independent replica ensembles.  Marker
-samples inside one fixed-N realization are not treated as independent after
+samples inside one capacity-controlled realization are not treated as independent after
 resampling.
 """
 
@@ -24,18 +25,17 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from core.state import KinematicState, ParticleState
 from diagnostics.avalanche import monte_carlo_convergence_slope, replicate_mean_sem
 from resampling.multinomial import stratified_resample
 try:
-    from tests.convergence.test_large_angle_avalanche import (
+    from benchmarks.test_large_angle_avalanche import (
         b3_growth_reference,
         run_growth_replicates,
     )
-except ModuleNotFoundError:  # direct execution from tests/convergence
-    from test_large_angle_avalanche import b3_growth_reference, run_growth_replicates
+except ModuleNotFoundError:  # direct execution from validation tree
+    from benchmarks.test_large_angle_avalanche import b3_growth_reference, run_growth_replicates
 
 jax.config.update("jax_enable_x64", True)
 
@@ -208,8 +208,8 @@ def run_b3_macrostep_scan(
     return rows
 
 
-def test_fixed_n_branching_recovers_exact_growth_and_mc_scaling():
-    """Fixed-N random thinning is unbiased and converges statistically."""
+def test_capacity_branching_recovers_exact_growth_and_mc_scaling():
+    """Capacity overflow thinning is unbiased and converges statistically."""
 
     counts = np.asarray([128, 256, 512, 1024])
     rows = [run_branching_replicates(int(n)) for n in counts]
@@ -229,9 +229,8 @@ def test_fixed_n_branching_recovers_exact_growth_and_mc_scaling():
     assert np.max(scaled) / np.min(scaled) < 2.5
 
 
-@pytest.mark.slow
-def test_b3_fixed_n_statistics_converge_with_marker_count():
-    """Published Fig. B3(a) is recovered as fixed-N statistics improve."""
+def test_b3_capacity_statistics_converge_with_marker_count():
+    """Published Fig. B3(a) is recovered as capacity statistics improve."""
 
     rows = run_b3_marker_scan()
     counts = np.asarray([row["n_markers"] for row in rows], dtype=float)
@@ -247,7 +246,6 @@ def test_b3_fixed_n_statistics_converge_with_marker_count():
     assert np.max(scaled) / np.min(scaled) < 2.0
 
 
-@pytest.mark.slow
 def test_b3_large_angle_macrostep_is_resolved():
     """Fig. B3 growth is insensitive to the large-angle update cadence."""
 
@@ -282,7 +280,7 @@ def _plot_synthetic(output_dir: Path):
     slope, _ = monte_carlo_convergence_slope(counts, std)
 
     fig, ax = plt.subplots(figsize=(6.2, 4.3))
-    ax.errorbar(counts, mean, yerr=sem, marker="o", capsize=3, label="fixed-N JONTA")
+    ax.errorbar(counts, mean, yerr=sem, marker="o", capsize=3, label="capacity-controlled JONTA")
     ax.axhline(exact, linestyle="--", label="exact branching eigenvalue")
     ax.set_xscale("log", base=2)
     ax.set_xlabel("marker count N")
@@ -398,7 +396,7 @@ def main():
 
     if args.case == "synthetic":
         rows, slope = _plot_synthetic(args.output_dir)
-        print(f"fixed-N synthetic fitted noise slope: {slope:.3f}")
+        print(f"capacity synthetic fitted noise slope: {slope:.3f}")
         for row in rows:
             print(row)
     elif args.case == "b3-markers":

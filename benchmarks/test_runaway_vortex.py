@@ -3,7 +3,7 @@
 This benchmark is intentionally *particle only*.  The external references are
 
 1. numerical values reported by Guo, McDevitt & Tang, PPCF 59, 044003 (2017),
-   stored in ``reference_data/guo_2017_ppcf_bump.csv``; and
+   stored in ``benchmarks/reference_data/guo_2017_ppcf_bump.csv``; and
 2. the analytical relations derived in that paper, especially Eqs. (16) and
    (22)--(25).
 
@@ -26,7 +26,6 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from boundaries.basic import momentum_reservoir_boundary
 from collisions.coulomb import (
@@ -395,7 +394,7 @@ def _make_vortex_initial_ensemble(
     p_min: float = DEFAULT_P_MIN,
     p_init_max: float = DEFAULT_P_INIT_MAX,
 ):
-    """Broad fixed-N marker ensemble for steady-state burn-in.
+    """Broad fixed-capacity marker ensemble for steady-state burn-in.
 
     Guo et al. solve for a steady state, so the initial distribution is not a
     validation target.  A broad proposal in ``p`` and ``xi`` deliberately
@@ -430,7 +429,7 @@ def _make_vortex_kernel(
     alpha: float = DEFAULT_ALPHA,
     energy_scattering: bool = True,
 ):
-    """Build one JIT-compiled fixed-N runaway-vortex Monte-Carlo loop.
+    """Build one JIT-compiled fixed-capacity runaway-vortex Monte-Carlo loop.
 
     The hot loop contains no Python timestepping or particle loops.  A Strang
     split is used between the production small-angle operator and RK4
@@ -647,7 +646,7 @@ def run_particle_vortex_case(
     zeff: float = DEFAULT_Z,
     alpha: float = DEFAULT_ALPHA,
 ):
-    """Run one fixed-N particle-only steady runaway-vortex calculation.
+    """Run one fixed-capacity particle-only steady runaway-vortex calculation.
 
     The distribution is time averaged after burn-in.  Marker groups provide a
     simple independent-subensemble estimate of statistical uncertainty in the
@@ -710,7 +709,6 @@ def run_particle_vortex_case(
     }
 
 
-@pytest.mark.slow
 def test_particle_runaway_vortex_recovers_guo_bump_on_tail():
     """Distribution-level particle-only comparison with Guo Fig. 9.
 

@@ -48,7 +48,6 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from core.config import OrbitNormalization
 from core.constants import C_LIGHT_M_S, E_CHARGE_C, M_E_KG
@@ -299,7 +298,6 @@ def observed_orders(rows, invariant: str):
     return orders
 
 
-@pytest.mark.slow
 def test_midpoint_guiding_center_invariants_converge():
     rows = run_convergence(
         midpoint_step,
@@ -319,7 +317,6 @@ def test_midpoint_guiding_center_invariants_converge():
     assert np.nanmedian(observed_orders(rows, "mu")[-3:]) > 1.7
 
 
-@pytest.mark.slow
 def test_rk4_guiding_center_invariants_converge():
     rows = run_convergence(
         rk4_step,
@@ -337,7 +334,6 @@ def test_rk4_guiding_center_invariants_converge():
     assert mu_errors[0] / mu_errors[-1] > 1.0e3
 
 
-@pytest.mark.slow
 def test_rk4_guiding_center_invariants_extreme_electric_field_scan_remains_finite():
     """Guard the full extreme-field scan against non-finite orbit states."""
 

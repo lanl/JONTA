@@ -9,7 +9,8 @@ interval. The candidate ensemble contains
     outgoing electron:w q     at state 4
 
 which is the Monte Carlo representation of one loss and two gain terms. The
-3N weighted candidates are then stratified-randomly thinned back to the fixed N slots.
+3N weighted candidates are compacted into local capacity and stratified-thinned
+only when live candidates overflow that capacity.
 """
 
 from __future__ import annotations
@@ -17,15 +18,13 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 
-from core.precision import index_dtype
-
 from core.config import MollerConfig
 from core.constants import PI
 from core.math import momentum_from_gamma, safe_radius
-from core.rng import uniform_by_particle
+from core.rng import derive_particle_ids, uniform_by_particle
 from core.state import BackgroundProfiles, KinematicState, ParticleState
 from fields.profiles import sample_background
-from resampling.multinomial import stratified_resample
+from population.capacity import capacity_control
 
 
 def moller_dsigma_dgamma(gamma0, gamma_secondary):
@@ -192,7 +191,13 @@ def gain_loss_candidates(
     )
     wc = cat(w0, wp, ws)
     alive = wc > 0.0
-    pid = jnp.arange(wc.shape[0], dtype=index_dtype())
+    pid = jnp.concatenate(
+        [
+            particles.pid,
+            derive_particle_ids(particles.pid, global_step, 1),
+            derive_particle_ids(particles.pid, global_step, 2),
+        ]
+    )
     candidates = ParticleState(kin, wc, alive, pid)
     return candidates, q_raw
 
@@ -211,8 +216,8 @@ def source_only_candidates(
     This is the conventional avalanche source approximation used for the
     Appendix-B benchmarks of McDevitt, Guo & Tang (PPCF 61, 054008, 2019).
     The incoming primary remains at its original state while a secondary of
-    expected weight ``w*q`` is added.  The candidate ensemble is subsequently
-    randomly thinned to the production fixed-N marker count.
+    expected weight ``w*q`` is added. The candidate ensemble is subsequently
+    compacted into local capacity and thinned only on overflow.
     """
 
     q_raw = collision_fraction(particles, background, dt_large_angle, config)
@@ -245,7 +250,9 @@ def source_only_candidates(
     )
     wc = cat(w0, ws)
     alive = wc > 0.0
-    pid = jnp.arange(wc.shape[0], dtype=index_dtype())
+    pid = jnp.concatenate(
+        [particles.pid, derive_particle_ids(particles.pid, global_step, 1)]
+    )
     return ParticleState(kin, wc, alive, pid), q_raw
 
 
@@ -256,17 +263,24 @@ def apply_moller_source_only(
     base_key,
     global_step: int,
     config: MollerConfig,
+    *,
+    return_diagnostics: bool = False,
 ):
-    """Apply the conventional source-only Moller model and thin to N."""
+    """Apply source-only Moller model with local capacity control."""
 
     candidates, q_raw = source_only_candidates(
         particles, background, dt_large_angle, base_key, global_step, config
     )
-    n = particles.weight.shape[0]
     resample_key = jax.random.fold_in(base_key, jnp.asarray(global_step, dtype=jnp.uint32))
     resample_key = jax.random.fold_in(resample_key, jnp.uint32(33))
-    out = stratified_resample(candidates, resample_key, n)
-    return out, jnp.max(q_raw)
+    out, population = capacity_control(
+        candidates,
+        particles.weight.shape[0],
+        resample_key,
+        global_step=global_step,
+    )
+    result = (out, jnp.max(q_raw))
+    return (*result, population) if return_diagnostics else result
 
 def apply_moller_gain_loss(
     particles: ParticleState,
@@ -275,14 +289,21 @@ def apply_moller_gain_loss(
     base_key,
     global_step: int,
     config: MollerConfig,
+    *,
+    return_diagnostics: bool = False,
 ):
-    """Apply the weighted conservative gain-loss model and thin back to N."""
+    """Apply conservative Moller gain-loss with local capacity control."""
 
     candidates, q_raw = gain_loss_candidates(
         particles, background, dt_large_angle, base_key, global_step, config
     )
-    n = particles.weight.shape[0]
     resample_key = jax.random.fold_in(base_key, jnp.asarray(global_step, dtype=jnp.uint32))
     resample_key = jax.random.fold_in(resample_key, jnp.uint32(23))
-    out = stratified_resample(candidates, resample_key, n)
-    return out, jnp.max(q_raw)
+    out, population = capacity_control(
+        candidates,
+        particles.weight.shape[0],
+        resample_key,
+        global_step=global_step,
+    )
+    result = (out, jnp.max(q_raw))
+    return (*result, population) if return_diagnostics else result

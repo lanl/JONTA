@@ -1,6 +1,9 @@
-# Convergence tests
+# Validation tests
 
-Timestep, marker-number, grid-resolution, collision-cadence, coupling-cadence, and statistical convergence tests belong here. See `docs/validation.md` for the acceptance hierarchy.
+Timestep, marker-number, grid-resolution, collision-cadence, coupling-cadence,
+and statistical validation tests belong here. Coding tests live under
+`tests/unit/` and `tests/integration/`; paper/analytical benchmark drivers live
+under `benchmarks/`. See `docs/validation.md` for the acceptance hierarchy.
 
 ## Guiding-center invariant conservation
 
@@ -35,7 +38,7 @@ partition/merge separately.
 Both invariant errors are accumulated during the same orbit push, avoiding duplicate integration work. The generated RK2/RK4 figures contain separate panels for `P_phi` and `mu` together with the expected `dt^2` and `dt^4` reference slopes.
 
 ```bash
-PYTHONPATH=src python tests/convergence/test_guiding_center_invariants.py \
+PYTHONPATH=src python tests/validation/test_guiding_center_invariants.py \
   --output-dir convergence_results
 ```
 
@@ -43,7 +46,7 @@ That command is the full default scan. For a bounded CPU preview, override
 *both* axes explicitly and label the output as a preview; for example:
 
 ```bash
-PYTHONPATH=src JAX_PLATFORMS=cpu python tests/convergence/test_guiding_center_invariants.py \
+PYTHONPATH=src JAX_PLATFORMS=cpu python tests/validation/test_guiding_center_invariants.py \
   --electric-fields 0 10 10000 \
   --dts 2.56e-7 6.4e-8 1.6e-8 \
   --final-time 1e-5 --n-particles 8 \
@@ -75,7 +78,7 @@ validation checks the energy CDF against the isotropic Maxwellian and verifies
 `<xi> -> 0` and `<xi^2> -> 1/3`.
 
 ```bash
-PYTHONPATH=src python tests/convergence/test_small_angle_maxwellian_relaxation.py \
+PYTHONPATH=src python tests/validation/test_small_angle_maxwellian_relaxation.py \
   --output-dir convergence_results
 ```
 
@@ -93,13 +96,13 @@ and the code fits
 - `D = 0.5 d(<Delta r^2>-<Delta r>^2)/dt`.
 
 The published Figure 3 markers and visible vertical error-bar limits are
-digitized into `reference_data/mcdevitt_2019_ppcf_fig3.csv`.  Figure 3 uses the
+digitized into `benchmarks/reference_data/mcdevitt_2019_ppcf_fig3.csv`. Figure 3 uses the
 fully ionized low-Z collision model.  The red dashed nonrelativistic estimate
 is computed independently from McDevitt et al. Eq. (1); after normalization
 by their Eq. (3), the pure fully ionized case reduces to `D_non-rel/D0 = c/v`.
 
 Figure 6 is digitized independently into
-`reference_data/mcdevitt_2019_ppcf_fig6.csv`.  It uses deuterium plus singly
+`benchmarks/reference_data/mcdevitt_2019_ppcf_fig6.csv`. It uses deuterium plus singly
 ionized argon with `n_Ar+ = n_D/10` and the partially screened pitch-angle
 coefficients.  JONTA uses the same RAMc/Hesslow screening fit (`Z0=18`,
 `ZI=1`, `aI=0.329`, `k=5`) and computes the energy-dependent electron-ion and
@@ -140,7 +143,7 @@ similar.
 
 ## Runaway vortex / bump-on-tail
 
-`test_runaway_vortex.py` reproduces the 0D-2V kinetic benchmark of Guo,
+`benchmarks/test_runaway_vortex.py` reproduces the 0D-2V kinetic benchmark of Guo,
 McDevitt & Tang (PPCF **59**, 044003, 2017). Large-angle collisions and
 external sources are off; the retained physics are electric-field acceleration,
 collisional drag, energy diffusion, pitch-angle scattering, and synchrotron
@@ -156,7 +159,7 @@ and (22)--(25).
 The test now has two layers. Fast checks compare the production deterministic
 and stochastic coefficients directly with Guo Eqs. (2)--(5), including a
 JIT-compiled large-marker one-step test of Monte-Carlo means and variances. A
-slow distribution-level test evolves a fixed-size equal-weight marker ensemble
+distribution-level validation evolves a fixed-size equal-weight marker ensemble
 through the full 0D kinetic system with a single JIT-compiled JAX loop. It
 time-averages the particle distribution after burn-in and verifies: (1) the
 pitch-integrated tail remains monotone at `E/Ec=2`; (2) bumps form at
@@ -176,7 +179,7 @@ this diagnostic never enters the particle evolution.
 
 ## Large-angle collisions / avalanche
 
-`test_large_angle_avalanche.py` validates the production Møller operator and
+`benchmarks/test_large_angle_avalanche.py` validates the production Møller operator and
 the conservative mixed Fokker--Planck--Boltzmann avalanche model against
 McDevitt, Guo & Tang (PPCF **61**, 054008, 2019).  All distribution-level
 results are produced by the JONTA particle Monte Carlo solver; there is no
@@ -221,7 +224,7 @@ inside JIT-compiled control flow.  The large-angle cadence remains a separate
 macro-step so it can be refined independently of the orbit/small-angle step.
 
 ```bash
-PYTHONPATH=src python -m tests.convergence.test_large_angle_avalanche \
+PYTHONPATH=src python -m benchmarks.test_large_angle_avalanche \
   --case b3 --output-dir large_angle_results
 ```
 
@@ -232,13 +235,13 @@ family at a time is also useful on CPU because long sequential JAX benchmark
 jobs can retain substantial compiled/runtime state.
 
 The broader McDevitt-2019 figure-reproduction driver is
-`test_mcdevitt_2019_avalanche_figures.py`.  It intentionally accepts **exactly
+`benchmarks/test_mcdevitt_2019_avalanche_figures.py`. It intentionally accepts **exactly
 one** `--figure` argument per process; the previous `--figure all` path has been
 removed so long GPU/CPU validation jobs are checkpointed figure by figure.
 Use, for example,
 
 ```bash
-PYTHONPATH=src python -m tests.convergence.test_mcdevitt_2019_avalanche_figures \
+PYTHONPATH=src python -m benchmarks.test_mcdevitt_2019_avalanche_figures \
   --figure 3 --output-dir mcdevitt_fig3
 ```
 

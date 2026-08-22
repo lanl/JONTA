@@ -232,7 +232,7 @@ def rosenbluth_legendre_markers(
     alpha_syn: float = 0.0,
     total_weight: float = 1.0,
 ):
-    """Approximate avalanche-eigenmode initializer for fixed-N calculations.
+    """Approximate avalanche-eigenmode initializer for fixed-capacity calculations.
 
     Energy is sampled from the Rosenbluth exponentially decaying kinetic-energy
     spectrum using an analytically estimated acceleration time / avalanche

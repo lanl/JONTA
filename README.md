@@ -29,12 +29,16 @@ The current reference implementation contains the major building blocks needed f
 - Euler, midpoint, and RK4 fixed-step integrators behind a common contract;
 - Maxwellian-background test-particle small-angle collisions;
 - conservative linearized Moller gain-loss large-angle collisions;
-- fixed-N stratified random resampling/thinning for branching operators;
+- fixed-capacity local marker population control with overflow-only stratified thinning;
 - tritium and Compton kinetic sources;
 - radial binning and RAMc-compatible parallel-current deposition;
+- scalar slab/0-D moment deposition through the same macrostep contract;
 - Spitzer resistivity reference closure;
 - implicit BDF2 radial electric-field evolution;
 - Picard particle/Ohm coupling for the circular 1-D model;
+- geometry-neutral particle macrostep and serial/sharded moment reduction;
+- geometry-neutral Picard driver with circular and slab backend seams;
+- homogeneous slab algebraic Ohm coupling adapter;
 - circular safety-factor evolution;
 - electron/ion energy bookkeeping;
 - implicit charge-state evolution using preprocessed OpenADAS/ADAS rate tables;
@@ -53,7 +57,7 @@ particle timestep dt_p
 
 large-angle cadence dt_LA
     conservative Moller gain-loss update
-    fixed-N thinning/resampling
+    local capacity control and overflow thinning
 
 plasma-coupling cadence dt_c
     deposit kinetic moments
@@ -105,6 +109,10 @@ jonta/
 │   ├── sources/
 │   └── simulation.py
 ├── tests/
+│   ├── unit/              coding/unit contracts
+│   ├── integration/       compiled and serial/parallel execution tests
+│   └── validation/        explicit numerical/physical validation
+├── benchmarks/            paper/analytic benchmark drivers and reference data
 ├── examples/
 └── scripts/
 ```
@@ -145,6 +153,16 @@ For development:
 python -m pip install -e '.[dev]'
 PYTHONPATH=src pytest -q
 ```
+
+`pytest -q` runs complete coding tests only. Numerical validation is explicit:
+
+```bash
+PYTHONPATH=src pytest -q tests/validation
+```
+
+Paper and analytical comparisons live under `benchmarks/` and are run through
+the commands documented in [`docs/benchmarks.md`](docs/benchmarks.md). They
+are never hidden behind a test marker.
 
 On Apple silicon, the optional Metal backend can be installed with:
 
@@ -189,9 +207,9 @@ parallel = build_particle_block(
 ```
 
 Use `platform="gpu"` for a supported accelerator. Serial execution is the
-reference path; parallel execution shards markers and replicates compact field
-state. The parallel wrapper currently excludes large-angle population control
-until a distributed global resampler is implemented.
+reference path; parallel execution shards markers, performs population control
+locally, and replicates compact field state. Global resampling is not required
+for the particle/plasma coupling design.
 
 A simple throughput driver is available as:
 

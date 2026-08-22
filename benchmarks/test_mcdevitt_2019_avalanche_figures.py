@@ -46,8 +46,8 @@ from diagnostics.avalanche import fit_exponential_growth
 from diagnostics.runaway_vortex import guo_x_point_momentum
 from integrators.explicit import rk4_step
 from orbits.ramc_circular import ramc_circular_rhs
-from tests.convergence import test_large_angle_avalanche as la
-from tests.convergence import test_runaway_vortex as rv
+from benchmarks import test_large_angle_avalanche as la
+from benchmarks import test_runaway_vortex as rv
 
 jax.config.update("jax_enable_x64", True)
 
@@ -916,7 +916,6 @@ def test_fig2_ring_acceptance_rejects_radial_collapse():
     assert diagnostics["final_mean_radius"] == 0.0
 
 
-@pytest.mark.slow
 def test_b2_high_field_avalanche_is_exponential():
     res = la.run_growth_replicates(
         70.0,

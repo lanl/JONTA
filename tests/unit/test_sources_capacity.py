@@ -27,7 +27,7 @@ def test_source_candidates_add_exact_weight():
     assert jnp.allclose(jnp.sum(c.weight), 15.0)
 
 
-def test_source_injection_returns_fixed_n_and_preserves_total_weight():
+def test_source_injection_uses_capacity_and_preserves_total_weight():
     p = particles_from_arrays(
         gamma=jnp.array([2.0, 3.0]),
         xi=jnp.array([0.0, 0.0]),

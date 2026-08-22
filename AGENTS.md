@@ -31,7 +31,7 @@ Do not violate these without an explicit design decision documented in `docs/arc
 - Particle, large-angle, plasma-coupling, and diagnostics cadences are independent.
 - Plasma/Ohm coupling is a separate multiphysics layer; BDF2 is the reference implicit scheme.
 - Serial and particle-sharded execution are explicit `ExecutionConfig` modes; serial is the trusted reference.
-- Parallel particle evolution must not be enabled with large-angle population control until a distributed global resampler is implemented.
+- Parallel particle evolution uses device-local fixed-capacity population control by design. Each device owns its marker pool and overflow thinning; no global resampler is required. Cross-device moment reduction happens after local pushes and must preserve aggregate observables.
 - High-level orchestration contains as little physics as possible.
 
 ## 3. Directory responsibilities
@@ -42,7 +42,7 @@ Do not violate these without an explicit design decision documented in `docs/arc
 - `src/integrators/`: generic time integration of deterministic characteristics.
 - `src/collisions/`: small- and large-angle collision physics.
 - `src/sources/`: tritium, Compton, and external kinetic sources.
-- `src/resampling/`: fixed-N thinning/resampling algorithms.
+- `src/resampling/` and `src/population/`: fixed-capacity compaction, thinning, and resampling algorithms.
 - `src/deposition/`: particle-to-grid moments and binning.
 - `src/plasma/`: background plasma, atomic data, charge states, resistivity, energy equations.
 - `src/coupling/`: implicit Ohm/electric-field and other multiphysics coupling algorithms.

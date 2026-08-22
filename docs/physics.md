@@ -323,7 +323,7 @@ The loss term removes the incoming energetic state participating in a large-angl
 
 The energetic population alone is not particle-number conserving: one energetic electron plus one background electron can produce two energetic outgoing electrons. Number, energy, and momentum conservation apply to the combined kinetic-plus-background system. If depletion of the background reservoir becomes significant, the background model must account for that transfer explicitly.
 
-The initial JONTA kernel uses the cold-target Møller differential cross section to sample the energy of one outgoing electron and the corresponding two-body scattering kinematics to reconstruct both outgoing pitches. The associated loss term removes the colliding fraction of the incoming kinetic state. This defines the default conservative linearized operator; its fixed-N Monte Carlo realization is described in `numerics.md`. The source-only Møller operator in RAMc remains an important limiting benchmark but is not itself the default JONTA formulation.
+The initial JONTA kernel uses the cold-target Møller differential cross section to sample the energy of one outgoing electron and the corresponding two-body scattering kinematics to reconstruct both outgoing pitches. The associated loss term removes the colliding fraction of the incoming kinetic state. This defines the default conservative linearized operator; its fixed-capacity Monte Carlo realization is described in `numerics.md`. The source-only Møller operator in RAMc remains an important limiting benchmark but is not itself the default JONTA formulation.
 
 ### 5.3 Møller cross section and RAMc benchmark
 

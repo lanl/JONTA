@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 
 from core.precision import index_dtype, real_dtype
+from core.rng import derive_particle_ids
 from core.state import KinematicState, ParticleState
 
 
@@ -15,7 +16,27 @@ def effective_sample_size(weight):
     return jnp.where(total > 0.0, total * total / jnp.sum(w * w), 0.0)
 
 
-def multinomial_resample(candidates: ParticleState, key, n_out: int) -> ParticleState:
+def _resampled_state(candidates, idx, total, n_out, global_step):
+    kin = KinematicState(
+        candidates.kin.gamma[idx],
+        candidates.kin.xi[idx],
+        candidates.kin.x[idx],
+        candidates.kin.y[idx],
+        candidates.kin.phi[idx],
+    )
+    weight = jnp.full((n_out,), total / n_out, dtype=real_dtype())
+    alive = jnp.ones((n_out,), dtype=jnp.bool_)
+    pid = derive_particle_ids(
+        candidates.pid[idx],
+        global_step,
+        jnp.arange(n_out, dtype=index_dtype()),
+    )
+    return ParticleState(kin, weight, alive, pid)
+
+
+def multinomial_resample(
+    candidates: ParticleState, key, n_out: int, *, global_step: int = 0
+) -> ParticleState:
     """Randomly thin a weighted candidate ensemble to exactly ``n_out`` slots.
 
     Selection is multinomial with probabilities proportional to marker
@@ -30,17 +51,7 @@ def multinomial_resample(candidates: ParticleState, key, n_out: int) -> Particle
     def _nonempty(_):
         logits = jnp.where(w > 0.0, jnp.log(w), -jnp.inf)
         idx = jax.random.categorical(key, logits, shape=(n_out,))
-        kin = KinematicState(
-            candidates.kin.gamma[idx],
-            candidates.kin.xi[idx],
-            candidates.kin.x[idx],
-            candidates.kin.y[idx],
-            candidates.kin.phi[idx],
-        )
-        weight = jnp.full((n_out,), total / n_out, dtype=real_dtype())
-        alive = jnp.ones((n_out,), dtype=jnp.bool_)
-        pid = jnp.arange(n_out, dtype=index_dtype())
-        return ParticleState(kin, weight, alive, pid)
+        return _resampled_state(candidates, idx, total, n_out, global_step)
 
     def _empty(_):
         z = jnp.zeros((n_out,), dtype=real_dtype())
@@ -50,7 +61,9 @@ def multinomial_resample(candidates: ParticleState, key, n_out: int) -> Particle
     return jax.lax.cond(total > 0.0, _nonempty, _empty, operand=None)
 
 
-def stratified_resample(candidates: ParticleState, key, n_out: int) -> ParticleState:
+def stratified_resample(
+    candidates: ParticleState, key, n_out: int, *, global_step: int = 0
+) -> ParticleState:
     """Low-variance random thinning/resampling to exactly ``n_out`` slots.
 
     The unit interval is divided into ``n_out`` equal strata and one uniform
@@ -72,17 +85,7 @@ def stratified_resample(candidates: ParticleState, key, n_out: int) -> ParticleS
         positions = (jnp.arange(n_out, dtype=real_dtype()) + u) / n_out
         idx = jnp.searchsorted(cdf, positions, side="right")
         idx = jnp.minimum(idx, w.shape[0] - 1)
-        kin = KinematicState(
-            candidates.kin.gamma[idx],
-            candidates.kin.xi[idx],
-            candidates.kin.x[idx],
-            candidates.kin.y[idx],
-            candidates.kin.phi[idx],
-        )
-        weight = jnp.full((n_out,), total / n_out, dtype=real_dtype())
-        alive = jnp.ones((n_out,), dtype=jnp.bool_)
-        pid = jnp.arange(n_out, dtype=index_dtype())
-        return ParticleState(kin, weight, alive, pid)
+        return _resampled_state(candidates, idx, total, n_out, global_step)
 
     def _empty(_):
         z = jnp.zeros((n_out,), dtype=real_dtype())

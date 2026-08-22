@@ -2,7 +2,7 @@
 
 The formulas in this module are diagnostic/reference relations rather than
 production evolution equations.  They are used by the 0D kinetic validation
-benchmark in ``tests/convergence/test_runaway_vortex.py``.
+benchmark in ``benchmarks/test_runaway_vortex.py``.
 
 Reference
 ---------

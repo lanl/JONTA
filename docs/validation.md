@@ -47,12 +47,12 @@ For every sampled cold-target event:
 
 Parallel momentum reconstructed from the two outgoing particles must equal incoming parallel momentum to roundoff.
 
-Before fixed-N resampling, weighted gain-loss candidates must conserve kinetic energy and increase kinetic particle weight by exactly the transferred background-electron weight.
+Before capacity control, weighted gain-loss candidates must conserve kinetic energy and increase kinetic particle weight by exactly the transferred background-electron weight.
 
 ### Resampling
 
 - total represented weight is preserved exactly;
-- equal weights give `N_eff=N`;
+- equal weights give `N_eff` equal to active-marker count;
 - repeated resampling of a known distribution is unbiased within Monte Carlo confidence intervals.
 
 ### Plasma solvers
@@ -205,7 +205,7 @@ and the runaway-tail spread estimate `(p_O-p_X)/1.8`. Guo Eq. (16) supplies
 the large-p acceleration-channel width used as an additional coefficient check.
 
 The distribution-level acceptance test is generated entirely by the production
-marker Monte-Carlo algorithm. A broad fixed-N ensemble is used only to shorten
+marker Monte-Carlo algorithm. A broad fixed-capacity ensemble is used only to shorten
 burn-in; the steady distribution is time averaged after burn-in. The kinetic
 hot loop uses Strang splitting between the production small-angle operator and
 RK4 electric/synchrotron dynamics and is compiled as one JAX kernel. The test
@@ -240,7 +240,7 @@ This is especially important because JONTA intentionally replaces RAMc's source-
 
 ### 7.1 Source-limit recovery
 
-In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller/RAMc secondary source growth rate within statistical and cutoff errors.  The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`.  The published Monte-Carlo markers are digitized in `tests/convergence/reference_data/mcdevitt_2019_ppcf_large_angle.csv` and are compared directly with JONTA particle results.
+In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller/RAMc secondary source growth rate within statistical and cutoff errors.  The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`.  The published Monte-Carlo markers are digitized in `benchmarks/reference_data/mcdevitt_2019_ppcf_large_angle.csv` and are compared directly with JONTA particle results.
 
 The corresponding threshold benchmark uses the zero crossing of the fitted exponential population growth and compares with McDevitt Eq. (B15),
 
@@ -446,9 +446,9 @@ The repository currently includes fast tests for:
 - 0-D force sign and stationary limits;
 - circular orbit energy behavior and approximate magnetic-moment consistency;
 - analytic/axisymmetric interpolation primitives;
-- small-angle physical boundaries and the fixed-N momentum-reservoir boundary;
+- small-angle physical boundaries and the fixed-capacity momentum-reservoir boundary;
 - Møller cross section, two-body event conservation, and gain-loss accounting;
-- fixed-N resampling and fixed-N source injection weight preservation;
+- capacity compaction, overflow thinning, and source-injection weight preservation;
 - radial binning weight conservation;
 - charge-state density conservation;
 - electron/ion energy sign conventions and constant-power BDF2 evolution;
@@ -531,7 +531,7 @@ McDevitt, Guo & Tang, PPCF **61**, 054008 (2019), Figures 2, 3, 4, 5, 6, 7, 8,
 10, 11, 13, 14, B2, B3 and B4.  Run **one figure per process**:
 
 ```bash
-PYTHONPATH=src python -m tests.convergence.test_mcdevitt_2019_avalanche_figures \
+PYTHONPATH=src python -m benchmarks.test_mcdevitt_2019_avalanche_figures \
   --figure B3 --output-dir mcdevitt_B3 --paper
 ```
 

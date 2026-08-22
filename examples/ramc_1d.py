@@ -17,7 +17,6 @@ from orbits import ramc_circular_rhs
 from plasma import ramc_spitzer_eta_bar
 from simulation import build_particle_block
 
-
 N = 50_000
 NR = 96
 DT_PARTICLE = 2.0e-7
@@ -59,9 +58,20 @@ j0 = deposit_ramc_parallel_current(
 history = FieldHistory(e1, e1, j0, j0, eta, eta)
 
 sa_cfg = SmallAngleConfig(1.0e14, 15.0)
-orbit = lambda kin, t, f: ramc_circular_rhs(kin, t, f, norm)
-small = lambda p, bg, dt, rng, step: small_angle_step(p, bg, dt, rng, step, sa_cfg)
-boundary = lambda p: radial_absorbing_wall(p, 1.0)
+
+
+def orbit(kin, t, field):
+    return ramc_circular_rhs(kin, t, field, norm)
+
+
+def small(particles, background, dt, rng, step):
+    return small_angle_step(particles, background, dt, rng, step, sa_cfg)
+
+
+def boundary(particles):
+    return radial_absorbing_wall(particles, 1.0)
+
+
 particle_block = build_particle_block(
     orbit,
     rk4_step,
@@ -77,7 +87,6 @@ result = picard_ramc1d_step(
     history,
     particle_block,
     DT_PARTICLE,
-    N_PARTICLE_STEPS,
     key,
     0,
     norm,

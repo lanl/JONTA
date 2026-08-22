@@ -21,7 +21,7 @@ Verify the backend and precision path:
 ```bash
 JAX_PLATFORMS=cpu python -c \
   'import jax; print(jax.default_backend()); print(jax.devices())'
-JAX_PLATFORMS=cpu PYTHONPATH=src python -m pytest -q -m 'not slow'
+JAX_PLATFORMS=cpu PYTHONPATH=src python -m pytest -q
 ```
 
 JONTA enables FP64 by default. FP32 is available for experiments with

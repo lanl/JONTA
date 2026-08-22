@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the numerical realization of the physics in `physics.md`: marker representation, timestep hierarchy, deterministic integration, stochastic collisions, conservative large-angle gain/loss, fixed-N thinning, deposition, and implicit plasma coupling.
+This document defines the numerical realization of the physics in `physics.md`: marker representation, timestep hierarchy, deterministic integration, stochastic collisions, conservative large-angle gain/loss, fixed-capacity population control, deposition, and implicit plasma coupling.
 
 ## 2. Precision
 
@@ -14,7 +14,7 @@ evidence; FP64 remains reference precision.
 
 The target Blackwell GPUs support FP64; mixed precision is not an initial design requirement.
 
-## 3. Fixed-size weighted Monte Carlo ensemble
+## 3. Fixed-capacity weighted Monte Carlo ensemble
 
 The kinetic distribution is represented by markers
 
@@ -22,7 +22,7 @@ The kinetic distribution is represented by markers
 \{z_i,w_i\}_{i=1}^{N},
 \]
 
-with fixed array size `N`. For an observable \(A\),
+with fixed per-device capacity `C`. For an observable \(A\),
 
 \[
 \int f A\,d\Gamma \approx \sum_i w_i A(z_i).
@@ -36,7 +36,9 @@ W=\sum_i w_i,
 
 and need not be constant because sources and avalanche can transfer particles from the background into the kinetic population.
 
-Array size, however, remains constant. Losses set marker weight to zero; gain/loss and source operations use temporary fixed-shape candidate ensembles followed by random thinning/resampling.
+Array size remains constant. Losses set marker weight to zero and `alive=False`.
+Gain/loss and source operations create temporary candidate ensembles, compact live
+candidates into free slots, and thin only when local live candidates exceed `C`.
 
 ### 3.1 Effective sample size
 
@@ -46,7 +48,9 @@ A useful weight-quality diagnostic is
 N_{\rm eff}=\frac{(\sum_iw_i)^2}{\sum_iw_i^2}.
 \]
 
-Resampling should not be invoked merely because it is available. It should occur when required by a fixed-N gain/source operation or when weight degeneracy makes statistical quality unacceptable.
+Resampling should not be invoked merely because a large-angle event occurred.
+It is required on local capacity overflow, or by an explicitly configured ESS
+policy after independent convergence evidence.
 
 ## 4. Independent timestep hierarchy
 
@@ -198,42 +202,43 @@ A uniform azimuth about the incoming momentum gives
 
 which is the direct sampling representation of the RAMc \(\Pi\) pitch distribution. The outgoing primary pitch is reconstructed from momentum conservation.
 
-### 8.5 Fixed-N thinning
+### 8.5 Fixed-capacity population control
 
-The `3N` candidate ensemble is thinned to exactly `N` marker slots. The
-reference algorithm is **stratified random resampling** using the normalized
+The `3C` candidate work array is first compacted into `C` fixed slots without
+resampling when its live candidate count fits. If live candidates exceed `C`,
+the reference algorithm is **stratified random resampling** using normalized
 candidate weights
 
 \[
 P_j=\frac{w_j}{\sum_kw_k}.
 \]
 
-The cumulative distribution is divided into `N` equal-probability strata and
+The cumulative distribution is divided into `C` equal-probability strata and
 one uniform random variate is drawn independently inside each stratum. Selected
 markers receive equal weight
 
 \[
-w'=\frac{\sum_kw_k}{N}.
+w'=\frac{\sum_kw_k}{C}.
 \]
 
 This preserves total represented weight exactly and preserves other moments
 without bias in expectation.  Compared with ordinary multinomial resampling it
-substantially reduces branching noise while retaining genuinely random fixed-N
-thinning.  It still introduces sampling variance; therefore the large-angle
-cadence should not be unnecessarily frequent.
+substantially reduces branching noise while retaining genuinely random local
+overflow thinning. It still introduces sampling variance; therefore capacity
+and large-angle cadence must be convergence parameters.
 
-Other statistically valid resamplers may be added behind the same fixed-N
-contract; global multinomial resampling remains available as a reference
-implementation.
+Other statistically valid resamplers may be added behind the same local
+capacity contract; global multinomial resampling remains available as a
+reference implementation.
 
 ### 8.6 Statistical contract for branching calculations
 
-The fixed-`N` representation is interpreted as one **correlated particle
-ensemble**, not as `N` independent samples after resampling.  The reference
+Each device-local fixed-capacity representation is one **correlated particle
+ensemble**, not independent samples after resampling. The reference
 statistical protocol is therefore:
 
-1. every resampling operation returns equal-weight markers, with the global
-   represented population carried by
+1. overflow resampling returns equal-weight markers, with the represented
+   population carried by
    \(W=\sum_i w_i\);
 2. uncertainties on avalanche growth rates, thresholds, spectra, and related
    branching observables are estimated from **independent PRNG replica
@@ -252,19 +257,19 @@ statistical protocol is therefore:
    duration rather than changing the algorithm.
 
 A cheap two-type linear branching test with a known dominant eigenvalue is
-included in `tests/convergence/test_fixed_n_statistics.py` to verify this
+included in `benchmarks/test_population_statistics.py` to verify this
 contract independently of runaway-electron physics.
 
 ## 9. Tritium, Compton, and external sources
 
-Physical source models return phase-space source densities and/or source samplers independently of the fixed-N representation.
+Physical source models return phase-space source densities and/or source samplers independently of capacity management.
 
-A generic fixed-N source update is:
+A generic fixed-capacity source update is:
 
 1. sample a fixed number of source candidates from the physical source spectrum;
 2. assign total expected source weight over the source interval;
 3. concatenate existing and source candidates;
-4. randomly thin back to `N` slots.
+4. compact into capacity, thinning only on overflow.
 
 This keeps source physics independent of the population-control algorithm.
 
@@ -285,6 +290,15 @@ Subsequent resampling can repopulate fixed computational slots.
 For the circular 1-D model, particle moments are deposited onto a radial grid with linear cloud-in-cell weights. Generic binned moments use JAX array reductions. The RAMc current depositor retains the legacy geometric normalization and center regularity condition.
 
 With large particle counts, statistical accuracy is expected to dominate over high-order particle shapes; more elaborate deposition can be added if convergence studies justify it.
+
+### 11.1 Scalar slab / 0-D deposition
+
+Uniform-field and slab models do not require radial bins, circular safety
+factor, or flux-surface Jacobians. Their depositor returns scalar current and
+represented weight. Any volume or normalization factor is passed explicitly
+as `current_scale`; coupling only sees the resulting `ParticleMoments`.
+
+This makes 0-D coupling a geometry adapter, not a second particle algorithm.
 
 ## 12. Electric-field coupling
 
@@ -341,9 +355,19 @@ E^{(k)}
 \rightarrow E^{n+1,(k+1)}.
 \]
 
-The initial reference method is Picard iteration with optional under-relaxation. Every Picard iteration re-advances particles from the same `n`-level ensemble using the current field guess, deposits the new kinetic current, and solves the BDF2 field equation.
+The initial reference method is geometry-neutral Picard iteration with optional
+under-relaxation. A backend supplies field construction, moment deposition, and
+plasma solve callbacks. Every iteration re-advances particles from the same
+`n`-level ensemble using current field guess, deposits moments, and solves
+backend field equation. Circular RAMc uses radial BDF2 callback; slab uses
+scalar field callback.
 
 Convergence is measured from the relative field residual, not merely the number of iterations.
+
+After the final field iterate is accepted, the particle block is run once more
+under that field. The returned particle state and deposited kinetic current
+therefore correspond to the returned electric-field profile, even when the
+Picard loop stops at its iteration limit.
 
 More sophisticated Newton/JFNK coupling can replace Picard if needed. A fully implicit nonlinear solve over every particle coordinate is not the intended architecture.
 
@@ -408,12 +432,17 @@ The recommended execution pattern is:
 
 Particles are sharded on their leading dimension. Compact field and plasma profiles are replicated. Local particle moments are reduced across the mesh before the plasma solve.
 
+Coupling adapters can set `require_partitioned=True`; this rejects particle
+blocks that flatten device outputs before deposition. Use
+`build_particle_block(..., preserve_partitioning=True)` when enforcing local
+device moment reduction.
+
 The first portable multi-device correctness slice is deterministic guiding-center
 evolution. It can be exercised on CPU device emulation before running on CUDA:
 
 ```bash
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
-  JAX_PLATFORMS=cpu pytest -q tests/convergence/test_parallel_orbit.py
+  JAX_PLATFORMS=cpu pytest -q tests/integration/test_parallel_orbit.py
 ```
 
 The test compares a one-device reference with a two- or four-device particle
@@ -424,17 +453,11 @@ population control.
 Production particle blocks expose the same distinction through
 `ExecutionConfig(mode="serial"|"parallel", platform="auto"|"cpu"|"gpu")`.
 The serial block is the trusted reference. The parallel block uses `pmap` over
-the leading marker axis and replicates compact field/background state. The
-parallel wrapper currently rejects large-angle operators because their fixed-N
-gain/loss resampler still needs a distributed global algorithm; silently doing
-local resampling would change the statistics.
-
-Population-control operations that require a global resample are the main potential challenge to strictly local multi-GPU execution. The reference single-ensemble resampler is correct; production multi-GPU work should benchmark either:
-
-- a global distributed resample; or
-- local per-device resampling with periodic global rebalancing/statistical checks.
-
-The latter is likely preferable if it can be shown unbiased for the required observables.
+the leading marker axis and replicates compact field/background state.
+Large-angle and source population control are local to each particle partition;
+no distributed global resampler is required by the intended particle/plasma
+coupling. Device-local capacity and overflow frequency must be included in
+statistical convergence tests.
 
 ## 19. Current numerical limitations / optimization targets
 
@@ -445,5 +468,6 @@ The current code is a reference implementation. Important optimization/validatio
 - determine the lowest-cost converged deterministic integrator;
 - establish acceptable large-angle and coupling cadences;
 - validate the conservative avalanche model against RAMc and published rates;
-- implement production multi-GPU reduction/resampling strategy;
+- connect the sharded moment-reduction helper to the production multi-device
+  plasma driver;
 - integrate preprocessed OPEN-ADAS tables into the full nonlinear plasma loop.

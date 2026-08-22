@@ -5,11 +5,18 @@ from __future__ import annotations
 import jax.numpy as jnp
 
 from core.precision import index_dtype, real_dtype
+from core.rng import derive_particle_ids
 from core.state import KinematicState, ParticleState
-from resampling.multinomial import multinomial_resample
+from population.capacity import capacity_control
 
 
-def append_source_candidates(particles: ParticleState, source_kin: KinematicState, total_source_weight):
+def append_source_candidates(
+    particles: ParticleState,
+    source_kin: KinematicState,
+    total_source_weight,
+    *,
+    global_step: int = 0,
+):
     """Combine existing markers with equally weighted source candidates."""
 
     ns = source_kin.gamma.shape[0]
@@ -32,9 +39,29 @@ def append_source_candidates(particles: ParticleState, source_kin: KinematicStat
         cat(particles.kin.phi, source.kin.phi),
     )
     w = cat(jnp.where(particles.alive, particles.weight, 0.0), source.weight)
-    return ParticleState(kin, w, w > 0.0, jnp.arange(w.shape[0], dtype=index_dtype()))
+    source_pid = derive_particle_ids(
+        jnp.arange(ns, dtype=index_dtype()),
+        global_step,
+        jnp.asarray(1, dtype=index_dtype()),
+    )
+    # Source slots receive deterministic IDs distinct from existing markers.
+    pid = jnp.concatenate([particles.pid, source_pid])
+    return ParticleState(kin, w, w > 0.0, pid)
 
 
-def inject_and_thin(particles, source_kin, total_source_weight, key):
-    candidates = append_source_candidates(particles, source_kin, total_source_weight)
-    return multinomial_resample(candidates, key, particles.weight.shape[0])
+def inject_and_thin(particles, source_kin, total_source_weight, key, *, global_step=0):
+    """Inject source candidates, thinning only when local capacity overflows."""
+
+    candidates = append_source_candidates(
+        particles,
+        source_kin,
+        total_source_weight,
+        global_step=global_step,
+    )
+    out, _diagnostics = capacity_control(
+        candidates,
+        particles.weight.shape[0],
+        key,
+        global_step=global_step,
+    )
+    return out

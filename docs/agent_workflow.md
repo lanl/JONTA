@@ -14,7 +14,7 @@ to navigate and validate a change without relying on conversation history.
 4. Read `docs/physics.md` before changing an equation or model.
 5. Read `docs/numerics.md` before changing an integrator, stochastic operator,
    cadence, resampler, deposition, or coupling algorithm.
-6. Read `docs/validation.md` and the relevant `tests/convergence/README.md`
+6. Read `docs/validation.md` and the relevant `tests/validation/README.md`
    section before changing a benchmark.
 7. Read `docs/benchmarks.md` before adding or interpreting checked-in results.
 
@@ -29,7 +29,9 @@ Use the source tree as the implementation map:
 | collisions, sources, resampling | corresponding physics directory | conservation/statistical test and numerical documentation |
 | serial/parallel device execution | `src/parallel/`, `src/simulation.py` | serial reference versus CPU sharding equivalence |
 | plasma/coupling/deposition | `src/plasma/`, `src/coupling/`, `src/deposition/` | manufactured or conservation test plus coupling residual evidence |
-| benchmark driver or figure | `tests/convergence/` | exact parameter grid, raw output, plot, and acceptance comparison |
+| coding test | `tests/unit/`, `tests/integration/` | deterministic contract or execution-path evidence |
+| numerical/physical validation | `tests/validation/` | convergence, conservation, or statistical evidence |
+| benchmark driver or figure | `benchmarks/` | exact parameter grid, raw output, plot, and acceptance comparison |
 
 ## Execution modes
 
@@ -44,12 +46,9 @@ ExecutionConfig(mode="parallel", platform="gpu")
 ```
 
 Serial execution is the trusted one-device reference. Parallel execution
-shards the leading particle axis and replicates compact field/background state.
-The current parallel block supports independent particle evolution, but
-rejects large-angle population control until a distributed global resampler
-exists. Do not silently substitute local resampling: that changes the
-statistics. CPU parallel tests emulate multiple devices with XLA; this tests
-device decomposition, not physical-core speedup.
+shards the leading particle axis, performs population control locally, and
+replicates compact field/background state. CPU parallel tests emulate multiple
+devices with XLA; this tests device decomposition, not physical-core speedup.
 
 Apple Metal is not a production validation backend for JONTA's FP64 path. Use
 CPU for Apple-silicon development and a supported CUDA/ROCm backend for future
@@ -63,22 +62,22 @@ Run the smallest relevant check first, then expand:
 # syntax/style for the files touched by a focused change
 python -m ruff check path/to/changed_source.py path/to/changed_test.py
 
-# quick regression suite
-PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q -m 'not slow'
+# complete coding-test suite
+PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q
 
 # serial/parallel CPU equivalence (logical CPU devices)
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   JAX_PLATFORMS=cpu PYTHONPATH=src python -m pytest -q \
-  tests/unit/test_simulation.py tests/convergence/test_parallel_orbit.py
+  tests/integration/test_simulation.py tests/integration/test_parallel_orbit.py
 
-# complete CPU validation before handoff
-PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q
+# explicit numerical/physical validation
+PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q tests/validation
 ```
 
-The full suite includes slow convergence/statistical tests. A reduced run is
-useful for development only; it is not acceptance evidence for a benchmark.
-GPU-specific changes additionally require a CUDA test when such a device is
-available.
+Coding tests always run at full configured fidelity. Numerical/physical
+validation and paper benchmarks are explicit jobs, never hidden behind a
+selective test filter. GPU-specific changes additionally require a CUDA test when
+such a device is available.
 
 The current reference tree has pre-existing whole-tree Ruff debt in older
 benchmark/test files. Do not mass-reformat unrelated files as part of a physics

@@ -43,17 +43,14 @@ include = [
     "orbits*",
     "parallel*",
     "plasma*",
+    "population*",
     "resampling*",
     "sources*",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/unit", "tests/integration"]
 addopts = "--strict-markers"
-markers = [
-    "gpu: requires a CUDA GPU",
-    "slow: convergence or statistical test not intended for every quick run",
-]
 
 [tool.ruff]
 line-length = 100

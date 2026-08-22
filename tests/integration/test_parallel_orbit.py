@@ -3,10 +3,10 @@
 Run with logical CPU devices exposed before Python starts, for example::
 
     XLA_FLAGS=--xla_force_host_platform_device_count=2 \
-      JAX_PLATFORMS=cpu pytest -q tests/convergence/test_parallel_orbit.py
+      JAX_PLATFORMS=cpu pytest -q tests/integration/test_parallel_orbit.py
 
 The test deliberately excludes Møller population control.  That operator
-needs a distributed global resampler and is validated separately.
+uses local fixed-capacity population control and is validated separately.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from core.state import ParticleState
 from integrators.explicit import rk4_step
 from orbits.ramc_circular import ramc_circular_rhs
 from parallel import merge_particle_partitions, partition_particles
-from tests.convergence.test_guiding_center_invariants import make_case
+from tests.validation.test_guiding_center_invariants import make_case
 
 jax.config.update("jax_enable_x64", True)
 
@@ -69,4 +69,3 @@ def test_cpu_particle_partition_matches_single_device_reference():
 
     for expected, actual in zip(reference, merged.kin):
         np.testing.assert_allclose(np.asarray(actual), np.asarray(expected), rtol=0.0, atol=5.0e-14)
-

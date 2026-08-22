@@ -51,13 +51,18 @@ jonta/
 │   ├── orbits/
 │   ├── parallel/
 │   ├── plasma/
+│   ├── population/
 │   ├── resampling/
 │   ├── sources/
 │   └── simulation.py
 ├── tests/
 │   ├── unit/
+│   ├── integration/
+│   ├── validation/
 │   ├── regression/
-│   └── convergence/
+│   └── performance/
+├── benchmarks/
+│   └── reference_data/
 ├── examples/
 └── scripts/
 ```
@@ -82,7 +87,10 @@ ParticleState
 └── pid[N]
 ```
 
-The number of array slots `N` remains fixed during a run. Physical population growth/loss is represented through weights. `alive` is a mask used for boundary losses and zero-weight slots; it does not resize arrays.
+The number of array slots remains fixed per device. Active-marker count may
+vary: `alive=False` and zero weight mark reusable dead slots. Local population
+control compacts live candidates into capacity and thins only when candidates
+exceed capacity. Arrays never resize.
 
 The initial phase-space choice follows RAMc: Lorentz factor `gamma`, pitch `xi=p_parallel/p`, and configuration-space coordinates. Other particle coordinate representations may be introduced behind a compatible orbit layer if needed.
 
@@ -162,7 +170,7 @@ Future structure-preserving or symplectic guiding-center integrators should impl
 Small- and large-angle operators are independent modules.
 
 - Small-angle default: Maxwellian-background test-particle friction, energy diffusion, and pitch scattering.
-- Large-angle default: conservative weighted Møller gain-loss realization followed by fixed-N thinning.
+- Large-angle default: conservative weighted Møller gain-loss realization followed by local capacity control.
 
 Collision operators do not perform field interpolation or plasma evolution.
 
@@ -174,19 +182,21 @@ Contains kinetic sources independent of collision operators:
 - Compton scattering;
 - future external source models.
 
-Source sampling and fixed-N injection are separated: physical source spectra are not tied to a particular resampling method.
+Source sampling and local capacity control are separated: physical source
+spectra are not tied to a particular population-control method.
 
 ### 5.6 `resampling/`
 
-Owns statistical population control. The current production branching path
-uses stratified random thinning/resampling with exact total-weight preservation;
-ordinary multinomial resampling is retained as a reference implementation.
-Alternative statistically valid algorithms can be added without changing
-collision/source physics.
+Owns local fixed-capacity population control. Candidates are compacted without
+resampling when they fit; stratified thinning preserves total weight only on
+overflow. Ordinary multinomial resampling remains a reference algorithm.
 
 ### 5.7 `deposition/`
 
-Owns particle-to-grid moments. The initial implementation contains generic radial linear binning and a RAMc-compatible normalized parallel-current deposition.
+Owns particle-to-grid moments. Radial CIC and RAMc-compatible current
+deposition live beside a scalar slab/0-D depositor. Geometry-specific
+depositors implement one-pool moment contracts; coupling owns neither radial
+coordinates nor circular Jacobians.
 
 ### 5.8 `plasma/`
 
@@ -204,12 +214,22 @@ Network access and raw atomic-data acquisition are explicitly outside simulation
 Owns low-dimensional implicit multiphysics updates:
 
 - generic backward Euler/BDF2 linear solves;
+- geometry-neutral particle/field Picard driver with injected backend callbacks;
 - radial BDF2 electric-field solve;
 - reduced algebraic Ohm law;
 - circular safety-factor update;
-- Picard particle/field coupling driver.
+- particle macrostep push/deposition contract;
+- serial and sharded moment reduction helpers;
+- Picard particle/field coupling driver with final-field consistency.
 
-The coupling layer may re-run compiled particle blocks during a nonlinear iteration, but particle physics remains in its own modules.
+Configuration adapters currently include `slab.py` for homogeneous scalar
+Ohm feedback and `ramc1d.py` for circular radial BDF2/(q(r)) feedback.
+Adapters may require device-local particle output explicitly; compiled blocks
+advertise this through `particle_output_partitioned`.
+
+The coupling layer may re-run compiled particle blocks during a nonlinear iteration, but particle physics remains in its own modules. `driver.py` owns iteration/restart/final-consistency logic; `ramc1d.py` supplies circular field and plasma callbacks.
+`macrostep.py` accepts custom moment depositors, so circular RAMc coupling and
+uniform-field/slab coupling share push, sharding, and reduction machinery.
 
 ### 5.10 `boundaries/`
 
@@ -255,7 +275,7 @@ state at t_n
 |                                                  |
 | at configured cadence:                          |
 |   conservative large-angle gain/loss            |
-|   random thinning back to fixed N               |
+|   local compaction; thin only on overflow       |
 +--------------------------------------------------+
    |
    v
@@ -285,7 +305,7 @@ Low-dimensional outer Picard iterations may remain Python-level initially becaus
 
 ### 7.2 Fixed shapes
 
-The persistent particle arrays keep shape `(N,)`. Møller gain/loss temporarily forms a fixed `(3N,)` candidate ensemble, then resamples back to `(N,)`. Because all shapes are known at trace time, this remains compatible with XLA compilation.
+The persistent particle arrays keep shape `(N,)`. Møller gain/loss temporarily forms fixed-size candidate ensembles, then applies capacity-safe population control back to `(N,)`. Because all shapes are known at trace time, this remains compatible with XLA compilation.
 
 ### 7.3 Memory layout
 
@@ -337,7 +357,7 @@ Examples:
 - new integrator: add `step(rhs, state, t, dt)` under `integrators/`;
 - new field backend: add field state/sampler under `fields/` and, if needed, a geometry-specific RHS under `orbits/`;
 - new small-angle operator: add a function under `collisions/` with the particle/background contract;
-- new resampler: implement fixed-N particle input/output under `resampling/`;
+- new resampler: implement capacity-safe particle input/output under `resampling/` or `population/`;
 - new plasma closure: add it under `plasma/` and consume it from the coupling layer.
 
 ## 10. Current implementation scope
@@ -349,7 +369,7 @@ The repository currently contains executable reference implementations for:
 - fixed-step RK integration;
 - Maxwellian-background small-angle collisions;
 - conservative weighted Møller large-angle gain/loss;
-- fixed-N stratified random thinning;
+- fixed-capacity compaction and overflow-only stratified thinning;
 - radial current deposition;
 - normalized Spitzer resistivity;
 - BDF2 electric-field evolution;

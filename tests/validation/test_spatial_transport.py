@@ -70,7 +70,7 @@ PAPER_ENERGIES_EV = (1.0e4, 1.0e5, 5.0e5, 1.5e6)
 # specified in the caption.
 PAPER_RADII = (0.222203, 0.333215, 0.444287, 0.555299, 0.666489, 0.777561)
 REFERENCE_DATA_PATH = (
-    Path(__file__).resolve().parent / "reference_data" / "mcdevitt_2019_ppcf_fig3.csv"
+    Path(__file__).resolve().parents[2] / "benchmarks" / "reference_data" / "mcdevitt_2019_ppcf_fig3.csv"
 )
 
 # Figure-6 partially screened benchmark.  The PDF caption gives a deuterium
@@ -78,7 +78,7 @@ REFERENCE_DATA_PATH = (
 # distributed with the project uses the Hesslow coefficients with these
 # argon fit parameters.
 FIG6_REFERENCE_DATA_PATH = (
-    Path(__file__).resolve().parent / "reference_data" / "mcdevitt_2019_ppcf_fig6.csv"
+    Path(__file__).resolve().parents[2] / "benchmarks" / "reference_data" / "mcdevitt_2019_ppcf_fig6.csv"
 )
 FIG6_MAIN_Z = 1.0
 FIG6_IMPURITY_FRACTION = 0.1  # n_Ar+ / n_D
@@ -385,7 +385,7 @@ def load_mcdevitt_fig3_reference(path: Path = REFERENCE_DATA_PATH):
     """Load digitized Figure-3 markers and visible error-bar limits.
 
     The CSV is a plot digitization rather than the authors' raw numerical data.
-    See ``reference_data/README.md`` for provenance and axis calibration.
+    See ``benchmarks/reference_data/README.md`` for provenance and axis calibration.
     """
 
     data = np.genfromtxt(path, delimiter=",", names=True)
@@ -673,7 +673,6 @@ def run_transport_scan(
     }
 
 
-@pytest.mark.slow
 def test_spatial_transport_pitch_scattering_produces_radial_diffusion():
     """GPU-ready smoke/convergence test of the Fig.-3 transport pathway."""
 
@@ -744,7 +743,6 @@ def test_mcdevitt_fig6_reference_and_partial_screening_scaling():
     assert np.allclose(scaling, outer["D_over_D0"], rtol=0.20, atol=0.0)
 
 
-@pytest.mark.slow
 def test_partial_screening_enhances_axisymmetric_diffusion():
     """The Figure-6 collision model must diffuse faster than Figure 3."""
 

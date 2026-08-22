@@ -12,9 +12,9 @@ The benchmark family contains:
 * conservative gain--loss versus conventional source-only avalanche physics,
   Fig. 14.
 
-The hot particle loop uses fixed-shape arrays, fixed-N random thinning and JAX
+The hot particle loop uses fixed-shape arrays, local capacity control and JAX
 control flow, so the same kernel is GPU-ready. The paper-quality configurations
-are intentionally marked slow.
+are intentionally kept separate from the always-on coding-test suite.
 """
 
 from __future__ import annotations
@@ -687,9 +687,8 @@ def test_b4_reference_and_atomic_inputs_cover_all_published_series():
     assert np.isclose(i1, 219.4)
 
 
-@pytest.mark.slow
 def test_b3_source_limit_growth_matches_published_monte_carlo():
-    """Selected Fig. B3(a) points using the production fixed-N MC source."""
+    """Selected Fig. B3(a) points using the production capacity-controlled MC source."""
 
     refs = {round(r["e_over_ec"], 2): r["value"] for r in b3_growth_reference()}
     for e in (3.23, 3.73, 4.23):
@@ -712,7 +711,6 @@ def test_b3_source_limit_growth_matches_published_monte_carlo():
         assert res["max_q"] < 0.20
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("zeff", [1.0, 5.0])
 @pytest.mark.parametrize("inv_alpha", [4.0, 20.0])
 def test_mcdevitt_b3_threshold_scan_tracks_eq_b15_for_both_zeff(zeff, inv_alpha):
@@ -734,7 +732,6 @@ def test_mcdevitt_b3_threshold_scan_tracks_eq_b15_for_both_zeff(zeff, inv_alpha)
     assert abs(threshold - expected) / expected < 0.08
 
 
-@pytest.mark.slow
 def test_fig13_conservative_cutoff_plateau_is_recovered():
     """Growth is insensitive to the FP/Boltzmann partition below the X point."""
 
@@ -761,7 +758,6 @@ def test_fig13_conservative_cutoff_plateau_is_recovered():
     assert np.ptp(values) < max(0.015, 0.55 * abs(np.mean(values)))
 
 
-@pytest.mark.slow
 def test_fig14_conservative_and_source_only_growth_are_close():
     """McDevitt Fig. 14: high-fidelity and source-only models nearly coincide."""
 
@@ -845,7 +841,7 @@ def run_driver(output_dir: Path, paper: bool = False, case: str = "all"):
             yerr=[r["JONTA_SEM"] for r in growth_rows],
             fmt="s",
             capsize=3,
-            label="JONTA fixed-N MC",
+            label="JONTA capacity-controlled MC",
         )
         ax.axhline(0.0, linewidth=0.8)
         ax.set(xlabel=r"$E/E_c$", ylabel=r"$\gamma_{av}\tau_c$", title="Avalanche growth: McDevitt Fig. B3(a)")

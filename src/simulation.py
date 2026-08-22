@@ -32,6 +32,7 @@ def build_particle_block(
     strang_small_angle: bool = True,
     precision: PrecisionValue = None,
     execution: ExecutionConfig | None = None,
+    preserve_partitioning: bool = False,
 ):
     """Build and JIT a fixed-length GPU-resident particle block.
 
@@ -39,24 +40,17 @@ def build_particle_block(
     Small-angle and large-angle operators receive the background state as an
     explicit argument. ``large_angle_every`` is measured in particle steps.
     ``execution`` selects the serial reference path or particle-sharded
-    execution on the requested CPU/GPU device set. Parallel execution
-    currently requires a globally independent particle operator; the
-    distributed large-angle resampler is intentionally rejected.
+    execution on the requested CPU/GPU device set. Population control is
+    local to each particle partition; compact field state remains replicated.
+    ``preserve_partitioning`` keeps the leading device axis in the parallel
+    return value for coupling-time local moment deposition. The default
+    retains the flat state API used by diagnostics and legacy callers.
     """
 
     if large_angle_operator is not None and large_angle_every <= 0:
         raise ValueError("large_angle_every must be positive when a large-angle operator is supplied")
     configure_precision(precision)
     execution_plan = resolve_execution(execution)
-    if (
-        execution_plan.config.mode == "parallel"
-        and large_angle_operator is not None
-    ):
-        raise NotImplementedError(
-            "parallel particle blocks with large-angle population control require "
-            "a distributed global resampler; use serial execution for now"
-        )
-
     def block(particles, field_state, background, t0, dt, base_key, global_step0):
         def body(carry, i):
             p, max_q = carry
@@ -108,6 +102,7 @@ def build_particle_block(
 
     compiled_block = jax.jit(block)
     if execution_plan.config.mode == "serial":
+        compiled_block.particle_output_partitioned = False
         return compiled_block
 
     mapped_block = jax.pmap(
@@ -127,6 +122,9 @@ def build_particle_block(
             base_key,
             global_step0,
         )
+        if preserve_partitioning:
+            return local_particles, local_max_q
         return merge_particle_partitions(local_particles), jnp.max(local_max_q)
 
+    parallel_block.particle_output_partitioned = preserve_partitioning
     return parallel_block

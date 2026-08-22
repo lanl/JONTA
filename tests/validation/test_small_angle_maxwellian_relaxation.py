@@ -38,7 +38,6 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from collisions.coulomb import thermal_coulomb_log, thermal_speed_over_c
 from collisions.small_angle import small_angle_step
@@ -336,7 +335,6 @@ def run_scan(
     return rows
 
 
-@pytest.mark.slow
 def test_small_angle_operator_relaxes_arbitrary_distributions_to_maxwellian():
     """Scan temperature and initial shape; all cases must reach one Maxwellian."""
 

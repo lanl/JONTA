@@ -9,8 +9,8 @@ def replicate_mean_sem(values):
     """Return mean, sample standard deviation, and SEM across independent runs.
 
     Replica-to-replica statistics are the reference uncertainty measure for
-    branching calculations because fixed-N resampling correlates markers inside
-    any one ensemble.
+    branching calculations because capacity overflow resampling correlates
+    markers inside any one ensemble.
     """
 
     x = np.asarray(values, dtype=float)

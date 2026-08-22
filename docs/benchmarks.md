@@ -12,7 +12,7 @@ contain:
   acceptance evidence.
 
 Reference data digitized from papers belongs under
-`tests/convergence/reference_data/` with provenance and licensing information.
+`benchmarks/reference_data/` with provenance and licensing information.
 Generated results belong under `benchmark_results/`; exploratory results may be
 kept locally or archived separately when they are not part of the public
 record.
@@ -23,18 +23,18 @@ The primary deterministic-orbit scan is:
 
 ```bash
 PYTHONPATH=src JAX_PLATFORMS=cpu python \
-  tests/convergence/test_guiding_center_invariants.py \
+  tests/validation/test_guiding_center_invariants.py \
   --output-dir benchmark_results/adiabatic_invariants_cpu_full
 ```
 
 This uses the documented full electric-field and timestep grids in
-[`tests/convergence/README.md`](../tests/convergence/README.md). It is an
+[`tests/validation/README.md`](../tests/validation/README.md). It is an
 expensive validation job, not a smoke test. A bounded CPU preview must override
 both axes explicitly:
 
 ```bash
 PYTHONPATH=src JAX_PLATFORMS=cpu python \
-  tests/convergence/test_guiding_center_invariants.py \
+  tests/validation/test_guiding_center_invariants.py \
   --electric-fields 0 10 10000 \
   --dts 2.56e-7 6.4e-8 1.6e-8 \
   --final-time 1e-5 --n-particles 8 \
@@ -50,7 +50,7 @@ Paper-scale figure reproduction is exposed one figure per process and is
 intended for a supported GPU:
 
 ```bash
-PYTHONPATH=src python tests/convergence/test_mcdevitt_2019_avalanche_figures.py \
+PYTHONPATH=src python benchmarks/test_mcdevitt_2019_avalanche_figures.py \
   --figure 2 --paper --output-dir benchmark_results/mcdevitt_fig2
 ```
 
@@ -59,7 +59,7 @@ paper-scale statistics. Do not label a reduced run as a paper reproduction.
 The transport family is similarly exposed through:
 
 ```bash
-PYTHONPATH=src python tests/convergence/test_spatial_transport.py \
+PYTHONPATH=src python tests/validation/test_spatial_transport.py \
   --output-dir benchmark_results/transport_cpu_preview
 ```
 

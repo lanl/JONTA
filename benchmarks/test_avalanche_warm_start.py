@@ -19,16 +19,15 @@ import csv
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from diagnostics.avalanche import replicate_mean_sem
 try:
-    from tests.convergence.test_large_angle_avalanche import (
+    from benchmarks.test_large_angle_avalanche import (
         b3_growth_reference,
         run_growth_replicates,
     )
-except ModuleNotFoundError:  # direct execution from tests/convergence
-    from test_large_angle_avalanche import b3_growth_reference, run_growth_replicates
+except ModuleNotFoundError:  # direct execution from benchmark tree
+    from benchmarks.test_large_angle_avalanche import b3_growth_reference, run_growth_replicates
 
 
 def _b3_reference(e_over_ec: float = 3.23210) -> float:
@@ -78,7 +77,6 @@ def run_warm_start_comparison(
     }
 
 
-@pytest.mark.slow
 def test_rosenbluth_legendre_warm_start_reduces_b3_burn_in():
     """A short CPU run is closer to Fig. B3 when warm-started analytically."""
 
@@ -179,7 +177,7 @@ def _write_results(result, outdir: Path):
     ax.plot(time[i_anchor:], reference_line[i_anchor:], linestyle="--", label="published B3 slope")
     ax.set_xlabel(r"$t/\tau_c$")
     ax.set_ylabel(r"$\ln[W(t)/W(0.5\tau_c)]$")
-    ax.set_title("Post-startup fixed-N avalanche growth")
+    ax.set_title("Post-startup capacity-controlled avalanche growth")
     ax.legend()
     fig.tight_layout()
     history_path = outdir / "b3_warm_start_history.png"
