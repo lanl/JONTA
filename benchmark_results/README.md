@@ -1,14 +1,14 @@
-# Checked-in benchmark results
+# Benchmark output directory
 
-This directory contains selected plots and raw outputs produced by JONTA
-benchmark drivers. They are reproducibility artifacts, not source code.
+Benchmark drivers write plots, raw tables, manifests, and resolved
+configurations here. Generated outputs are intentionally not tracked in Git;
+they are reproducible from the benchmark scripts and checked-in YAML templates.
 
-New result directories must include a manifest with the exact command, code
-commit, backend/device, precision, parameter grid, and interpretation. Results
-without a manifest are historical exploratory artifacts and must not be cited
-as paper-level acceptance evidence.
+Every local result directory should include a manifest with the exact command,
+code commit, backend/device, precision, parameter grid, and interpretation.
+Results without a manifest must not be cited as paper-level acceptance evidence.
 
 The canonical drivers and acceptance criteria are documented in
 [`docs/benchmarks.md`](../docs/benchmarks.md) and
 [`docs/validation.md`](../docs/validation.md). Keep digitized paper reference
-data separate under `tests/convergence/reference_data/`.
+data separate under [`benchmarks/reference_data/`](../benchmarks/reference_data/).

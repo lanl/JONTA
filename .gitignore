@@ -9,6 +9,8 @@ venv/
 build/
 dist/
 *.egg-info/
+benchmark_results/*
+!benchmark_results/README.md
 *.so
 .DS_Store
 *.log
