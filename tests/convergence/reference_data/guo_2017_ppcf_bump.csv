@@ -1,0 +1,4 @@
+quantity,e_over_ec,value,source_note
+bump_momentum,2.25,6.0551,"Guo et al. 2017 Fig. 9 labeled upper zero / bump location"
+bump_momentum,2.5,8.59096667,"Guo et al. 2017 Fig. 9 labeled upper zero / bump location"
+vortex_threshold,1.85,1.85,"Guo et al. 2017 Sec. 5 text: vortex disappears near E_O-X ~= 1.85 Ec"
