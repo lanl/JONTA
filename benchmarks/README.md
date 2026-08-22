@@ -8,6 +8,11 @@ Reference data lives in `reference_data/`. Reproduction commands, parameter
 grids, uncertainty rules, and result policy are documented in
 [`../docs/benchmarks.md`](../docs/benchmarks.md).
 
+Each benchmark configuration is recorded as YAML under [`configs/`](configs/).
+The schema and validation rules are documented in
+[`../docs/configuration.md`](../docs/configuration.md). Load a configuration
+before constructing JAX arrays, and archive its resolved form with the result.
+
 Run a driver explicitly, for example:
 
 ```bash

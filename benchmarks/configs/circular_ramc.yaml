@@ -1,0 +1,68 @@
+# Circular 1-D RAMc-like guiding-center configuration template.
+# This is a parameter/configuration template; the driver selects the figure.
+model:
+  geometry: circular
+  precision: float64
+execution:
+  mode: serial
+  platform: cpu
+geometry:
+  n_radial: 96
+  minor_radius_cm: 100.0
+  epsilon: 0.25
+  q0: 2.1
+  q2: 0.0
+  c_tau_over_a: 1.0
+  a_omega_ce_over_c: 1.0
+  alpha_syn: 0.0
+field:
+  e_over_ec: 2.0
+background:
+  ne_cm3: 1.0e14
+  te_ev: 1.0e3
+  ti_ev: 1.0e3
+  zeff: 1.0
+  coulomb_log: 15.0
+particles:
+  markers: 4096
+  total_weight: 1.0
+  seed: 22
+  gamma_range: [10.0, 20.0]
+  xi_range: [-1.0, -0.8]
+  radius_range: [0.0, 0.4]
+timesteps:
+  dt_particle: 1.0e-3
+  large_angle_every: 10
+  coupling_every: 100
+  diagnostics_every: 10
+collisions:
+  small_angle:
+    pitch_scattering: true
+    friction: true
+    energy_scattering: true
+    max_nu_dt: 0.5
+  large_angle:
+    enabled: true
+    gamma_min: 1.02
+    max_collision_fraction: 0.25
+    bisection_steps: 36
+population:
+  capacity: 4096
+  thinning: stratified
+  overflow_only: true
+  thinning_frequency: 1
+diagnostics:
+  fit_start_fraction: 0.35
+  bins: 320
+  sample_every: 10
+benchmark:
+  name: circular-ramc-template
+  description: Circular 1-D RAMc-like configuration template.
+  replicas: 1
+reference:
+  comparison: none
+output:
+  directory: ../../benchmark_results/circular_ramc
+  formats: [json, csv, png]
+  save_histories: true
+  save_final_state: false

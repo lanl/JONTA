@@ -130,6 +130,7 @@ Read these in roughly this order:
 - [`docs/validation.md`](docs/validation.md) — required unit, convergence, RAMc, physics, and performance tests.
 - [`docs/installation.md`](docs/installation.md) — CPU/CUDA setup and environment verification.
 - [`docs/benchmarks.md`](docs/benchmarks.md) — reproducible benchmark commands and result policy.
+- [`docs/configuration.md`](docs/configuration.md) — validated YAML schema and benchmark templates.
 - [`docs/code_map.md`](docs/code_map.md) — equation/model-to-source navigation map.
 - [`docs/agent_workflow.md`](docs/agent_workflow.md) — LLM task routing, execution modes, validation ladder, and handoff contract.
 - [`AGENTS.md`](AGENTS.md) — repository-wide rules for human and LLM-assisted development.
