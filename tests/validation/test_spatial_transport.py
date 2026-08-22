@@ -69,17 +69,13 @@ PAPER_ENERGIES_EV = (1.0e4, 1.0e5, 5.0e5, 1.5e6)
 # digitized x-locations avoids silently assuming round radii that were not
 # specified in the caption.
 PAPER_RADII = (0.222203, 0.333215, 0.444287, 0.555299, 0.666489, 0.777561)
-REFERENCE_DATA_PATH = (
-    Path(__file__).resolve().parents[2] / "benchmarks" / "reference_data" / "mcdevitt_2019_ppcf_fig3.csv"
-)
+REFERENCE_DATA_PATH = Path(__file__).resolve().parents[2] / "benchmarks" / "one_d" / "radial_transport" / "reference" / "mcdevitt_2019_fig3.csv"
 
 # Figure-6 partially screened benchmark.  The PDF caption gives a deuterium
 # background with singly ionized argon at n_Ar+ = n_D/10.  The RAMc source
 # distributed with the project uses the Hesslow coefficients with these
 # argon fit parameters.
-FIG6_REFERENCE_DATA_PATH = (
-    Path(__file__).resolve().parents[2] / "benchmarks" / "reference_data" / "mcdevitt_2019_ppcf_fig6.csv"
-)
+FIG6_REFERENCE_DATA_PATH = Path(__file__).resolve().parents[2] / "benchmarks" / "one_d" / "radial_transport" / "reference" / "mcdevitt_2019_fig6.csv"
 FIG6_MAIN_Z = 1.0
 FIG6_IMPURITY_FRACTION = 0.1  # n_Ar+ / n_D
 FIG6_Z0 = 18.0
@@ -385,7 +381,7 @@ def load_mcdevitt_fig3_reference(path: Path = REFERENCE_DATA_PATH):
     """Load digitized Figure-3 markers and visible error-bar limits.
 
     The CSV is a plot digitization rather than the authors' raw numerical data.
-    See ``benchmarks/reference_data/README.md`` for provenance and axis calibration.
+    See ``benchmarks/one_d/radial_transport/reference/metadata.yaml`` for provenance and axis calibration.
     """
 
     data = np.genfromtxt(path, delimiter=",", names=True)

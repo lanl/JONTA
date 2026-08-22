@@ -96,13 +96,13 @@ and the code fits
 - `D = 0.5 d(<Delta r^2>-<Delta r>^2)/dt`.
 
 The published Figure 3 markers and visible vertical error-bar limits are
-digitized into `benchmarks/reference_data/mcdevitt_2019_ppcf_fig3.csv`. Figure 3 uses the
+digitized into `benchmarks/one_d/radial_transport/reference/mcdevitt_2019_fig3.csv`. Figure 3 uses the
 fully ionized low-Z collision model.  The red dashed nonrelativistic estimate
 is computed independently from McDevitt et al. Eq. (1); after normalization
 by their Eq. (3), the pure fully ionized case reduces to `D_non-rel/D0 = c/v`.
 
 Figure 6 is digitized independently into
-`benchmarks/reference_data/mcdevitt_2019_ppcf_fig6.csv`. It uses deuterium plus singly
+`benchmarks/one_d/radial_transport/reference/mcdevitt_2019_fig6.csv`. It uses deuterium plus singly
 ionized argon with `n_Ar+ = n_D/10` and the partially screened pitch-angle
 coefficients.  JONTA uses the same RAMc/Hesslow screening fit (`Z0=18`,
 `ZI=1`, `aI=0.329`, `k=5`) and computes the energy-dependent electron-ion and

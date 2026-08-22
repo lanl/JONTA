@@ -35,7 +35,7 @@ from any working directory.
 ```python
 from core.configuration import load_config
 
-config = load_config("benchmarks/configs/slab_mcdevitt_b3.yaml")
+config = load_config("benchmarks/slab/avalanche_decay/config.yaml")
 config.apply_precision()  # before creating arrays or JIT kernels
 runtime_execution = config.execution_config
 runtime_cadence = config.cadence_config
@@ -46,7 +46,7 @@ To archive the exact resolved inputs alongside results:
 ```python
 from core.configuration import dump_resolved_config, load_config
 
-config = load_config("benchmarks/configs/slab_mcdevitt_b3.yaml")
+config = load_config("benchmarks/slab/avalanche_decay/config.yaml")
 dump_resolved_config(config, "benchmark_results/slab_b3/config.resolved.yaml")
 ```
 
@@ -54,12 +54,13 @@ The same validation is available without importing Python code manually:
 
 ```bash
 PYTHONPATH=src python scripts/resolve_config.py \
-  benchmarks/configs/slab_mcdevitt_b3.yaml \
+  benchmarks/slab/avalanche_decay/config.yaml \
   --output benchmark_results/slab_b3/config.resolved.yaml
 ```
 
-Templates for the first slab and circular configurations are in
-[`../benchmarks/configs/`](../benchmarks/configs/). Benchmark drivers are being
+Configurations are stored with their consuming benchmark under
+[`../benchmarks/slab/`](../benchmarks/slab/) and [`../benchmarks/one_d/`](../benchmarks/one_d/).
+Benchmark drivers are being
 migrated to consume this schema; until that migration is complete, a driver's
 CLI defaults remain documented in its module and the YAML template is the
 canonical parameter record for new runs.

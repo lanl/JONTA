@@ -11,8 +11,9 @@ contain:
 - a short statement of whether the result is preview, regression, or paper-level
   acceptance evidence.
 
-Reference data digitized from papers belongs under
-`benchmarks/reference_data/` with provenance and licensing information.
+Reference data digitized from papers belongs beside the consuming benchmark
+under `benchmarks/slab/*/reference/` or `benchmarks/one_d/*/reference/`, with
+provenance and licensing information.
 Generated results belong under `benchmark_results/`; exploratory results may be
 kept locally or archived separately when they are not part of the public
 record.

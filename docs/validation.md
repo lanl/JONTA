@@ -240,7 +240,7 @@ This is especially important because JONTA intentionally replaces RAMc's source-
 
 ### 7.1 Source-limit recovery
 
-In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller/RAMc secondary source growth rate within statistical and cutoff errors.  The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`.  The published Monte-Carlo markers are digitized in `benchmarks/reference_data/mcdevitt_2019_ppcf_large_angle.csv` and are compared directly with JONTA particle results.
+In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller/RAMc secondary source growth rate within statistical and cutoff errors.  The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`.  The published Monte-Carlo markers are digitized in `benchmarks/slab/avalanche_decay/reference/mcdevitt_2019_figB3_B13.csv` and are compared directly with JONTA particle results.
 
 The corresponding threshold benchmark uses the zero crossing of the fitted exponential population growth and compares with McDevitt Eq. (B15),
 

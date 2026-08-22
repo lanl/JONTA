@@ -1,0 +1,9 @@
+benchmark: one_d.invariant_conservation
+status: pending_digitization
+sources:
+  - key: ramc_documentation
+    citation: "RAMc documentation, Sec. III.A, Fig. 9"
+    source_document: RAMc-doc.pdf
+    source_url: null
+    comparison_targets: [toroidal_canonical_momentum, magnetic_moment]
+reference_data: []

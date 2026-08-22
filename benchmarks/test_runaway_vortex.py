@@ -3,7 +3,7 @@
 This benchmark is intentionally *particle only*.  The external references are
 
 1. numerical values reported by Guo, McDevitt & Tang, PPCF 59, 044003 (2017),
-   stored in ``benchmarks/reference_data/guo_2017_ppcf_bump.csv``; and
+   stored in ``benchmarks/slab/bump_on_tail/reference/guo_2017_fig9.csv``; and
 2. the analytical relations derived in that paper, especially Eqs. (16) and
    (22)--(25).
 
@@ -55,7 +55,7 @@ jax.config.update("jax_enable_x64", True)
 DEFAULT_VTE_OVER_C = 0.1
 DEFAULT_Z = 1.0
 DEFAULT_ALPHA = 0.2
-REFERENCE_DATA = Path(__file__).parent / "reference_data" / "guo_2017_ppcf_bump.csv"
+REFERENCE_DATA = Path(__file__).parent / "slab" / "bump_on_tail" / "reference" / "guo_2017_fig9.csv"
 
 
 def load_published_reference_data(path: Path = REFERENCE_DATA):

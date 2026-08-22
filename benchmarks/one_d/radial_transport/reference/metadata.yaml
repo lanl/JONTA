@@ -1,0 +1,16 @@
+benchmark: one_d.radial_transport
+status: digitized_reference_available
+sources:
+  - key: mcdevitt_2019_transport
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 024004 (2019)"
+    source_document: McDevitt_2019_PPCF_2.pdf
+    source_url: https://doi.org/10.1088/1361-6587/aaf4d1
+    figures: [3, 6]
+    comparison_targets: [radial_diffusivity, convective_transport]
+reference_data:
+  - file: mcdevitt_2019_fig3.csv
+    provenance: manual digitization of Figure 3 central markers and error bars
+    uncertainty: visible plotted error-bar limits; paper does not specify confidence meaning
+  - file: mcdevitt_2019_fig6.csv
+    provenance: manual digitization of Figure 6 central markers and error bars
+    uncertainty: visible plotted error-bar limits; paper does not specify confidence meaning

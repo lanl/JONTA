@@ -95,8 +95,8 @@ def test_config_applies_process_precision():
 @pytest.mark.parametrize(
     "path",
     [
-        Path("benchmarks/configs/slab_mcdevitt_b3.yaml"),
-        Path("benchmarks/configs/circular_ramc.yaml"),
+        Path("benchmarks/slab/avalanche_decay/config.yaml"),
+        Path("benchmarks/one_d/radial_avalanche/config.yaml"),
     ],
 )
 def test_checked_in_benchmark_templates_are_loadable(path):

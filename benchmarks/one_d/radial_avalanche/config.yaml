@@ -1,19 +1,22 @@
-# McDevitt et al. 2019 Appendix B3 slab avalanche growth-rate case.
-# Run with the benchmark driver after selecting the desired resolution.
+# Circular 1-D RAMc-like guiding-center configuration template.
+# This is a parameter/configuration template; the driver selects the figure.
 model:
-  geometry: slab
+  geometry: circular
   precision: float64
 execution:
   mode: serial
   platform: cpu
 geometry:
-  n_radial: 2
+  n_radial: 96
   minor_radius_cm: 100.0
-  epsilon: 0.0
+  epsilon: 0.25
+  q0: 2.1
+  q2: 0.0
   c_tau_over_a: 1.0
   a_omega_ce_over_c: 1.0
+  alpha_syn: 0.0
 field:
-  e_over_ec: 3.2321
+  e_over_ec: 2.0
 background:
   ne_cm3: 1.0e14
   te_ev: 1.0e3
@@ -23,15 +26,15 @@ background:
 particles:
   markers: 4096
   total_weight: 1.0
-  seed: 3
+  seed: 22
   gamma_range: [10.0, 20.0]
   xi_range: [-1.0, -0.8]
-  radius_range: [0.0, 0.0]
+  radius_range: [0.0, 0.4]
 timesteps:
   dt_particle: 1.0e-3
-  large_angle_every: 0
-  coupling_every: 1
-  diagnostics_every: 1
+  large_angle_every: 10
+  coupling_every: 100
+  diagnostics_every: 10
 collisions:
   small_angle:
     pitch_scattering: true
@@ -39,7 +42,10 @@ collisions:
     energy_scattering: true
     max_nu_dt: 0.5
   large_angle:
-    enabled: false
+    enabled: true
+    gamma_min: 1.02
+    max_collision_fraction: 0.25
+    bisection_steps: 36
 population:
   capacity: 4096
   thinning: stratified
@@ -48,19 +54,15 @@ population:
 diagnostics:
   fit_start_fraction: 0.35
   bins: 320
-  sample_every: 1
+  sample_every: 10
 benchmark:
-  name: mcdevitt-2019-b3-slab
-  reference: benchmarks/reference_data/mcdevitt_2019_ppcf_b4.csv
-  description: Uniform slab avalanche growth rate at E/Ec = 3.2321.
-  replicas: 8
+  name: circular-ramc-template
+  description: Circular 1-D RAMc-like configuration template.
+  replicas: 1
 reference:
-  data_file: ../reference_data/mcdevitt_2019_ppcf_b4.csv
-  comparison: growth_rate
-  growth_rate_sem: 0.0
-  r2_min: 0.95
+  comparison: none
 output:
-  directory: ../../benchmark_results/mcdevitt_b3
+  directory: ../../../benchmark_results/circular_ramc
   formats: [json, csv, png]
   save_histories: true
   save_final_state: false

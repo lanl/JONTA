@@ -1,0 +1,15 @@
+benchmark: one_d.radial_avalanche
+status: pending_digitization
+sources:
+  - key: mcdevitt_2019_avalanche
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 054008 (2019)"
+    source_document: McDevitt_2019_PPCF_Avalanche.pdf
+    source_url: https://doi.org/10.1088/1361-6587/ab0d6d
+    figures: [3, 4, 7]
+    comparison_targets: [radial_avalanche_threshold, radial_growth_rate]
+  - key: mcdevitt_2019_transport
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 024004 (2019)"
+    source_document: McDevitt_2019_PPCF_2.pdf
+    source_url: https://doi.org/10.1088/1361-6587/aaf4d1
+    figures: [1, 2]
+reference_data: []

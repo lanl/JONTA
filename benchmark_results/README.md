@@ -11,4 +11,4 @@ Results without a manifest must not be cited as paper-level acceptance evidence.
 The canonical drivers and acceptance criteria are documented in
 [`docs/benchmarks.md`](../docs/benchmarks.md) and
 [`docs/validation.md`](../docs/validation.md). Keep digitized paper reference
-data separate under [`benchmarks/reference_data/`](../benchmarks/reference_data/).
+data separate under the consuming benchmark's `reference/` directory.

@@ -1,0 +1,13 @@
+benchmark: slab.bump_on_tail
+status: digitized_reference_available
+sources:
+  - key: guo_2017
+    citation: "Z. Guo, C. J. McDevitt, and X.-Z. Tang, PPCF 59, 044003 (2017)"
+    source_document: Guo_2017_PPCF_PhaseSpaceRunaway.pdf
+    source_url: https://doi.org/10.1088/1361-6587/aa5952
+    figures: [9, 10, 11, 12]
+    comparison_targets: [bump_momentum, bump_width, vortex_threshold]
+reference_data:
+  - file: guo_2017_fig9.csv
+    provenance: labeled values transcribed from Fig. 9 and Sec. 5 text
+    uncertainty: transcription/plot-label uncertainty; not author raw data

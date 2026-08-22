@@ -1,0 +1,17 @@
+benchmark: slab.dreicer_generation
+status: pending_digitization
+sources:
+  - key: guo_2017
+    citation: "Z. Guo, C. J. McDevitt, and X.-Z. Tang, PPCF 59, 044003 (2017)"
+    source_document: Guo_2017_PPCF_PhaseSpaceRunaway.pdf
+    source_url: https://doi.org/10.1088/1361-6587/aa5952
+    figures: [3]
+  - key: kulsrud_1973
+    citation: "R. M. Kulsrud et al., Phys. Rev. Lett. 31, 690 (1973)"
+    source_document: external_reference
+    source_url: https://doi.org/10.1103/PhysRevLett.31.690
+  - key: connor_hastie_1975
+    citation: "J. W. Connor and R. J. Hastie, Nuclear Fusion 15, 415 (1975)"
+    source_document: external_reference
+    source_url: https://doi.org/10.1088/0029-5515/15/3/415
+reference_data: []

@@ -1,0 +1,25 @@
+benchmark: slab.avalanche_decay
+status: digitized_reference_available
+sources:
+  - key: mcdevitt_2019_avalanche
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 054008 (2019)"
+    source_document: McDevitt_2019_PPCF_Avalanche.pdf
+    source_url: https://doi.org/10.1088/1361-6587/ab0d6d
+    figures: [13, 14, B3, B4]
+    comparison_targets: [avalanche_growth_rate, avalanche_threshold, cutoff_invariance]
+  - key: mcdevitt_2018_topology
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 60, 024004 (2018)"
+    source_document: external_reference
+    source_url: https://doi.org/10.1088/1361-6587/aa9b3f
+    comparison_targets: [slab_avalanche_threshold, momentum_space_topology]
+  - key: ramc
+    citation: "RAMc documentation, Sec. III.E / Fig. 15"
+    source_document: RAMc-doc.pdf
+    source_url: null
+reference_data:
+  - file: mcdevitt_2019_figB3_B13.csv
+    provenance: manual digitization of Appendix Fig. B3(a) and Fig. 13
+    uncertainty: plot-digitization uncertainty
+  - file: mcdevitt_2019_figB4.csv
+    provenance: manual digitization of Appendix Fig. B4(a,b)
+    uncertainty: plot-digitization uncertainty

@@ -51,8 +51,8 @@ from orbits.zero_d import zero_d_rhs
 
 jax.config.update("jax_enable_x64", True)
 
-REFERENCE_DATA = Path(__file__).parent / "reference_data" / "mcdevitt_2019_ppcf_large_angle.csv"
-B4_REFERENCE_DATA = Path(__file__).parent / "reference_data" / "mcdevitt_2019_ppcf_b4.csv"
+REFERENCE_DATA = Path(__file__).parent / "slab" / "avalanche_decay" / "reference" / "mcdevitt_2019_figB3_B13.csv"
+B4_REFERENCE_DATA = Path(__file__).parent / "slab" / "avalanche_decay" / "reference" / "mcdevitt_2019_figB4.csv"
 DEFAULT_VTE = 0.1
 
 
