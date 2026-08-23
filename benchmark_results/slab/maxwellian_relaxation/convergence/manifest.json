@@ -1,0 +1,52 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0"
+    ],
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.maxwellian_relaxation",
+  "command_arguments": {
+    "convergence": true,
+    "devices": 1,
+    "dt_thermal": 0.005,
+    "markers": 4096,
+    "mode": "serial",
+    "output_dir": "benchmark_results/slab/maxwellian_relaxation/convergence",
+    "relaxation_thermal": 30.0,
+    "scaling": false,
+    "scaling_devices": [
+      1,
+      2,
+      4
+    ],
+    "scaling_temperature": 1000.0,
+    "seed": 41,
+    "temperatures": [
+      100.0,
+      1000.0,
+      10000.0
+    ]
+  },
+  "configuration_source": "CLI arguments; typed YAML integration pending",
+  "interpretation": "Analytical-equilibrium comparison; not paper-level acceptance evidence.",
+  "outputs": {
+    "csv": "convergence.csv",
+    "plot": "convergence.png"
+  },
+  "runtime": {
+    "git_commit": "df0a3225a15878703c6ef12ce5c51b75bbe2c2fc",
+    "git_dirty": true,
+    "jax": "0.11.1",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "status": "reproducibility_record",
+  "timing": {
+    "compilation_excluded": true,
+    "per_temperature_case": true,
+    "runtime_field": "runtime_seconds",
+    "synchronization": "jax.block_until_ready"
+  }
+}

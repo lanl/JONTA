@@ -18,6 +18,32 @@ Generated results belong under `benchmark_results/`; exploratory results may be
 kept locally or archived separately when they are not part of the public
 record.
 
+## Slab Maxwellian relaxation
+
+The production small-angle Fokker--Planck operator can be tested independently
+of fields, radiation, large-angle collisions, and plasma coupling:
+
+```bash
+PYTHONPATH=src:. JAX_PLATFORMS=cpu python \
+  benchmarks/slab/maxwellian_relaxation/run.py \
+  --output-dir benchmark_results/slab/maxwellian_relaxation/serial
+```
+
+The driver records relaxation metrics and synchronized runtime for each
+temperature case. Its convergence mode scans marker count, collision timestep,
+and independent seeds:
+
+```bash
+PYTHONPATH=src:. JAX_PLATFORMS=cpu python \
+  benchmarks/slab/maxwellian_relaxation/run.py \
+  --convergence \
+  --output-dir benchmark_results/slab/maxwellian_relaxation/convergence
+```
+
+CPU decomposition scaling uses the same fixed-shape collision kernel and
+logical XLA CPU devices. See the benchmark README for the exact scaling
+command and interpretation.
+
 ## Guiding-center invariant scan
 
 ## Tokamak trapped/passing orbits

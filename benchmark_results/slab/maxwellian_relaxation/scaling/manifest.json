@@ -1,0 +1,53 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0",
+      "cpu:1",
+      "cpu:2",
+      "cpu:3",
+      "cpu:4",
+      "cpu:5",
+      "cpu:6",
+      "cpu:7"
+    ],
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.maxwellian_relaxation",
+  "command_arguments": {
+    "devices": 1,
+    "dt_thermal": 0.005,
+    "markers": 4096,
+    "mode": "serial",
+    "output_dir": "benchmark_results/slab/maxwellian_relaxation/scaling",
+    "relaxation_thermal": 30.0,
+    "scaling": true,
+    "scaling_devices": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "scaling_temperature": 1000.0,
+    "seed": 41,
+    "temperatures": [
+      100.0,
+      1000.0,
+      10000.0
+    ]
+  },
+  "configuration_source": "CLI arguments; typed YAML integration pending",
+  "interpretation": "Analytical-equilibrium comparison; not paper-level acceptance evidence.",
+  "outputs": {
+    "csv": "scalability.csv",
+    "plot": "scalability.png"
+  },
+  "runtime": {
+    "git_commit": "df0a3225a15878703c6ef12ce5c51b75bbe2c2fc",
+    "git_dirty": true,
+    "jax": "0.11.1",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "status": "reproducibility_record"
+}

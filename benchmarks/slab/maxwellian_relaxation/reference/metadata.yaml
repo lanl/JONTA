@@ -1,12 +1,17 @@
 benchmark: slab.maxwellian_relaxation
-status: pending_digitization
-sources:
-  - key: ramc_documentation
-    citation: "RAMc documentation, Sec. III.B, Fig. 10"
-    source_document: RAMc-doc.pdf
-    source_url: null
-    comparison_targets: [Maxwellian relaxation, marker-number convergence]
+status: reproducible_cli_no_yaml
+sources: []
+comparison_targets:
+  - Maxwellian equilibrium
+  - pitch isotropy
+planned_convergence:
+  - marker-number convergence
+  - timestep convergence
+  - independent-seed spread
 reference_data: []
 notes: >-
-  Digitize the published Fig. 10 curves only after fixing the exact RAMc
-  normalization and panel/axis calibration in the benchmark README.
+  This is a self-contained numerical benchmark. It has no external published
+  reference curve; the acceptance reference is the analytic Maxwell–Jüttner
+  equilibrium defined in the benchmark README. The current driver records
+  CLI defaults in the result manifest; it does not yet consume a typed YAML
+  configuration.
