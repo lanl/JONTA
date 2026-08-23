@@ -934,32 +934,29 @@ def _write_particle_vortex_results(results, output_dir: Path):
             floor = max(np.max(ff) * 1.0e-6, np.min(positive) if positive.size else 1.0e-30)
             log_density = np.log10(np.maximum(ff.T, floor))
             levels = np.linspace(np.nanmin(log_density), np.nanmax(log_density), 40)
-            image = ax.contourf(pp, xi, log_density, levels=levels, cmap="viridis")
+            image = ax.contourf(pp, xi, log_density, levels=levels, cmap="plasma")
             speed = np.sqrt(gp * gp + gxi * gxi)
             u = gp / np.maximum(speed, 1.0e-300)
             v = gxi / np.maximum(speed, 1.0e-300)
             reliable = ff > np.max(ff) * 2.0e-4
             u = np.where(reliable, u, 0.0)
             v = np.where(reliable, v, 0.0)
-            # Thin white arrows preserve the contour structure while showing
-            # the direction of the reconstructed momentum-space probability
-            # current.  Subsampling keeps the overlay legible at 300 dpi.
-            p_grid, xi_grid = np.meshgrid(pp, xi, indexing="ij")
-            stride_p = max(1, pp.size // 28)
-            stride_xi = max(1, xi.size // 20)
-            ax.quiver(
-                p_grid[::stride_p, ::stride_xi],
-                xi_grid[::stride_p, ::stride_xi],
-                u[::stride_p, ::stride_xi],
-                v[::stride_p, ::stride_xi],
+            # Long white streamlines show complete probability-current
+            # trajectories, matching the phase-space-flow presentation used
+            # in Guo et al. The vectors are normalized because only the
+            # direction field is integrated for this overlay.
+            ax.streamplot(
+                pp,
+                xi,
+                u.T,
+                v.T,
                 color="white",
-                alpha=0.9,
-                width=0.0015,
-                linewidth=0.25,
-                angles="xy",
-                scale_units="xy",
-                scale=4.5,
-                pivot="mid",
+                density=1.0,
+                linewidth=0.45,
+                arrowsize=0.75,
+                minlength=0.2,
+                maxlength=100.0,
+                integration_direction="both",
             )
             ax.set_title(f"E/Ec={result['e_over_ec']:g}")
             ax.set_xlabel(r"$p/(m_e c)$")
