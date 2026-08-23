@@ -1,0 +1,16 @@
+benchmark: one_d.tokamak_orbits
+status: analytical_target_driver_available
+comparison_targets:
+  - trapped_passing_topology
+  - banana_width
+  - bounce_period
+  - toroidal_canonical_momentum
+  - magnetic_moment
+  - cpu_decomposition_scaling
+reference_data: []
+internal_provenance:
+  - description: >-
+      Circular guiding-center field conventions and invariant diagnostics
+      follow the internal RAMC-derived JONTA backend. This is not an
+      independent published numerical target.
+    internal_source_document: RAMC-doc.pdf

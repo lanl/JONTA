@@ -20,30 +20,60 @@ record.
 
 ## Guiding-center invariant scan
 
+## Tokamak trapped/passing orbits
+
+The collisionless circular-tokamak orbit benchmark is:
+
+```bash
+PYTHONPATH=src JAX_PLATFORMS=cpu python \
+  benchmarks/one_d/tokamak_orbits/run.py \
+  --output-dir benchmark_results/one_d/tokamak_orbits/rk4
+```
+
+It records trapped and passing trajectories, banana width, bounce-period
+estimates, and \(P_\phi\)/\(\mu\) conservation. The driver supports RK4,
+fixed Bogacki--Shampine 5, and adaptive Bogacki--Shampine 5(4). The adaptive
+method is the RAMc-compatible production comparison; the fixed methods are
+used for timestep-convergence studies.
+
 The primary deterministic-orbit scan is:
 
 ```bash
 PYTHONPATH=src JAX_PLATFORMS=cpu python \
-  tests/validation/test_guiding_center_invariants.py \
-  --output-dir benchmark_results/adiabatic_invariants_cpu_full
+  benchmarks/one_d/invariant_conservation/run.py \
+  --output-dir benchmark_results/one_d/invariant_conservation_cpu
 ```
 
 This uses the documented full electric-field and timestep grids in
-[`tests/validation/README.md`](../tests/validation/README.md). It is an
-expensive validation job, not a smoke test. A bounded CPU preview must override
+[`benchmarks/one_d/invariant_conservation/README.md`](../benchmarks/one_d/invariant_conservation/README.md).
+It is an expensive validation job. A bounded CPU development preview must override
 both axes explicitly:
 
 ```bash
 PYTHONPATH=src JAX_PLATFORMS=cpu python \
-  tests/validation/test_guiding_center_invariants.py \
+  benchmarks/one_d/invariant_conservation/run.py \
   --electric-fields 0 10 10000 \
   --dts 2.56e-7 6.4e-8 1.6e-8 \
   --final-time 1e-5 --n-particles 8 \
-  --output-dir benchmark_results/adiabatic_invariants_cpu_preview
+  --output-dir benchmark_results/one_d/invariant_conservation_preview
 ```
 
-The driver writes RK2/RK4 plots, an error-floor plot, a CSV containing the
-actual adjusted timestep and finite-state flag, and a JSON scan manifest.
+The driver writes RK4, fixed BS5, and adaptive BS5(4) convergence plots, an
+error-floor plot, a CSV containing actual adjusted timesteps and adaptive
+accept/reject counts, and a JSON scan manifest.
+
+Its CPU decomposition scaling case is:
+
+```bash
+XLA_FLAGS=--xla_force_host_platform_device_count=8 \
+PYTHONPATH=src JAX_PLATFORMS=cpu python \
+  benchmarks/one_d/invariant_conservation/run.py \
+  --scaling --scaling-devices 1 2 4 8 \
+  --output-dir benchmark_results/one_d/invariant_conservation_scaling_cpu
+```
+
+This keeps total marker work fixed and reports measured versus ideal speedup;
+devices are logical XLA CPU devices, not physical-core measurements.
 
 ## Published McDevitt figures
 
@@ -60,7 +90,7 @@ paper-scale statistics. Do not label a reduced run as a paper reproduction.
 The transport family is similarly exposed through:
 
 ```bash
-PYTHONPATH=src python tests/validation/test_spatial_transport.py \
+PYTHONPATH=src python benchmarks/one_d/radial_transport/run.py \
   --output-dir benchmark_results/transport_cpu_preview
 ```
 

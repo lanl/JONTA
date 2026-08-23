@@ -18,21 +18,21 @@ The target Blackwell GPUs support FP64; mixed precision is not an initial design
 
 The kinetic distribution is represented by markers
 
-\[
+```math
 \{z_i,w_i\}_{i=1}^{N},
-\]
+```
 
 with fixed per-device capacity `C`. For an observable \(A\),
 
-\[
+```math
 \int f A\,d\Gamma \approx \sum_i w_i A(z_i).
-\]
+```
 
 The physical particle count represented by the ensemble is
 
-\[
+```math
 W=\sum_i w_i,
-\]
+```
 
 and need not be constant because sources and avalanche can transfer particles from the background into the kinetic population.
 
@@ -44,9 +44,9 @@ candidates into free slots, and thin only when local live candidates exceed `C`.
 
 A useful weight-quality diagnostic is
 
-\[
+```math
 N_{\rm eff}=\frac{(\sum_iw_i)^2}{\sum_iw_i^2}.
-\]
+```
 
 Resampling should not be invoked merely because a large-angle event occurred.
 It is required on local capacity overflow, or by an explicitly configured ESS
@@ -63,11 +63,11 @@ JONTA does not use a single global meaning of "macro timestep." The relevant cad
 
 Typically
 
-\[
+```math
 \Delta t_{LA}=N_{LA}\Delta t_p,
 \qquad
 \Delta t_c=N_c\Delta t_p,
-\]
+```
 
 with integer ratios for efficient compiled loops, but there is no physical requirement that \(\Delta t_{LA}=\Delta t_c\).
 
@@ -77,15 +77,18 @@ The particle timestep is chosen from orbit and small-angle convergence. The larg
 
 The reference particle step uses operator splitting between deterministic evolution and the small-angle stochastic operator. The default construction uses Strang-like splitting:
 
-\[
+```math
 \mathcal P_{\Delta t_p}
 =
 C_{SA}(\Delta t_p/2)
 \,G(\Delta t_p)\,
 C_{SA}(\Delta t_p/2),
-\]
+```
 
-where \(G\) advances the deterministic guiding-center plus radiation characteristics.
+where \(G\) advances the Lorentz guiding-center map together with the
+deterministic synchrotron right-hand-side map. This is a numerical operator
+split; it does not redefine synchrotron radiation as part of the Vlasov
+transport term.
 
 This mirrors the useful separation in RAMc while keeping every marker on the same fixed particle timestep.
 
@@ -93,11 +96,12 @@ The split ordering is an algorithmic choice. Convergence tests, not historical c
 
 ## 6. Deterministic integration
 
-The deterministic equations are advanced by a swappable fixed-step integrator. The current reference implementations are:
+The deterministic equations are advanced by a swappable integrator. The current implementations are:
 
 - Euler, for debugging only;
-- explicit midpoint/RK2;
-- RK4.
+- explicit midpoint/RK2, retained as a coding baseline;
+- RK4;
+- fixed-step and adaptive Bogacki--Shampine 5(4).
 
 The integrator contract is conceptually
 
@@ -117,36 +121,85 @@ Integrator choice will be based on error per field/RHS evaluation. Relevant conv
 - Ware-pinch velocity;
 - transport and runaway-growth benchmarks.
 
-A future symplectic/structure-preserving guiding-center integrator is explicitly anticipated. Because guiding-center dynamics are noncanonical, such a method must be appropriate to the guiding-center Poisson/Hamiltonian structure rather than a generic canonical leapfrog inserted without derivation.
+The current orbit choices are explicit fixed-step RK4, fixed-step
+Bogacki--Shampine 5, and marker-local adaptive Bogacki--Shampine 5(4). The
+adaptive method uses a bounded JAX loop, reaches each configured output
+interval exactly, and reports accepted, rejected, and convergence status for
+each marker. It is the production-compatible higher-order option; fixed-step
+RK4 remains the simplest baseline for convergence studies.
 
-## 7. Small-angle Monte Carlo operator
+## 7. Fokker–Planck Monte Carlo operator
 
 The initial operator follows the RAMc Maxwellian-background test-particle model. Pitch and energy random increments are Gaussian. The collision coefficients are evaluated at the beginning of the collision substep.
+
+At the kinetic-model level, the small-angle operator contains the complete
+electron-ion contribution together with the electron-electron Fokker–Planck
+remainder below the selected large-angle cutoff. Only the electron-electron
+piece is paired with the Boltzmann Møller operator in the angle partition.
 
 Pitch is reflected at \(|\xi|=1\), implementing the Neumann boundary used by RAMc. Energy is reflected at \(\gamma=1\).
 
 Unlike legacy RAMc, the initial JONTA implementation does not use per-particle adaptive collision subcycling. A fixed \(\Delta t_p\) is selected so that the relevant collisional statistics converge. The reference implementation also limits \(\nu_D\Delta t\) with the same kind of safety cap used by RAMc; reaching that cap systematically indicates that \(\Delta t_p\) is too large for the intended physical regime.
 
-## 8. Conservative large-angle Møller realization
+## 8. Conservative Boltzmann Møller realization
 
 ### 8.1 Collision fraction
 
 For a marker with state \(z_i\), the large-angle operator computes the fraction
 
-\[
+```math
 q_i \simeq \nu_{LA}(z_i)\Delta t_{LA}
-\]
+```
 
-of its represented weight participating in a Møller collision during the large-angle interval. In the RAMc normalization the reference rate is based on the integrated Møller cross section,
+of its represented weight participating in a Møller collision during the large-angle interval. In the legacy RAMc normalization the reference rate is based on the integrated Møller cross section,
 
-\[
+```math
 q_i =
 \frac{n_e/n_{e0}}{4\pi\ln\Lambda_0}
 \,v_i\,\sigma_M(\gamma_i;\gamma_{\min})\,
 \Delta t_{LA},
-\]
+```
 
-with an optional target-electron factor for bound-electron models.
+with an optional target-electron factor for bound-electron models. The current
+runtime configuration exposes the cutoff through `gamma_min`, the minimum total
+Lorentz factor of either outgoing electron in the cold-target sampling
+formula. It is an energy parameterization of the same partition represented
+physically by the critical Møller angle $\chi_c$; these are not independent
+cutoffs. For incoming $\gamma_0>1$, JONTA uses the secondary-electron angle
+convention
+
+```math
+\cos^2\chi_c
+=
+\frac{(\gamma_0+1)(\gamma_{\min}-1)}
+     {(\gamma_0-1)(\gamma_{\min}+1)},
+\qquad
+1\leq\gamma_{\min}\leq\frac{\gamma_0+1}{2}.
+```
+
+The inverse mapping is
+
+```math
+\gamma_{\min}
+=
+\frac{1+r}{1-r},
+\qquad
+r=\cos^2\chi_c\frac{\gamma_0-1}{\gamma_0+1},
+\qquad
+0\leq\chi_c\leq\frac{\pi}{2}.
+```
+
+The public helpers `moller_cutoff_angle` and `moller_cutoff_gamma` in
+`src/collisions/moller.py` implement this mapping, and
+`moller_tail_cross_section_angle` evaluates the same integrated kernel from
+an angular cutoff. Runtime YAML remains backward-compatible with
+`collisions.large_angle.gamma_min`; the helpers make the physical convention
+explicit and provide a single place for future angle-based configuration. When
+the reduced or source relativistic Coulomb-log branch is enabled,
+`collisions.small_angle.large_angle_gamma_min` must equal that same value so
+the Fokker–Planck remainder and Boltzmann operator partition the collision
+integral identically. An ineligible energy cutoff or angle returns NaN from
+the mapping helpers rather than silently selecting a different partition.
 
 `MollerConfig.max_collision_fraction` is a safety guard. If the raw fraction approaches or exceeds it, the correct remedy is normally a smaller large-angle interval or subcycling, not reliance on clipping.
 
@@ -154,21 +207,21 @@ with an optional target-electron factor for bound-electron models.
 
 For incoming marker weight \(w_i\), one sampled collision pair generates three weighted candidates:
 
-\[
+```math
 \begin{array}{lll}
 \text{uncollided} &: z_i, & w_i(1-q_i),\\
 \text{outgoing primary} &: z_{3,i}, & w_iq_i,\\
 \text{outgoing target/secondary} &: z_{4,i}, & w_iq_i.
 \end{array}
-\]
+```
 
 The represented kinetic population therefore changes from \(w_i\) to \(w_i(1+q_i)\), as expected when background electrons are promoted into the energetic population.
 
 For the cold-target collision,
 
-\[
+```math
 (\gamma_3-1)+(\gamma_4-1)=\gamma_i-1,
-\]
+```
 
 so the gain-loss candidate ensemble conserves kinetic energy exactly before resampling.
 
@@ -182,23 +235,23 @@ The number of bisection iterations is fixed at compilation/runtime configuration
 
 After the secondary energy is sampled, the cold-target Møller scattering angle is
 
-\[
+```math
 \cos\theta_s=
 \sqrt{
 \frac{(\gamma_0+1)(\gamma_s-1)}
 {(\gamma_0-1)(\gamma_s+1)}
 }.
-\]
+```
 
 A uniform azimuth about the incoming momentum gives
 
-\[
+```math
 \xi_s
 =
 \xi_0\cos\theta_s
 +
 \sqrt{1-\xi_0^2}\sin\theta_s\cos\chi,
-\]
+```
 
 which is the direct sampling representation of the RAMc \(\Pi\) pitch distribution. The outgoing primary pitch is reconstructed from momentum conservation.
 
@@ -209,17 +262,17 @@ resampling when its live candidate count fits. If live candidates exceed `C`,
 the reference algorithm is **stratified random resampling** using normalized
 candidate weights
 
-\[
+```math
 P_j=\frac{w_j}{\sum_kw_k}.
-\]
+```
 
 The cumulative distribution is divided into `C` equal-probability strata and
 one uniform random variate is drawn independently inside each stratum. Selected
 markers receive equal weight
 
-\[
+```math
 w'=\frac{\sum_kw_k}{C}.
-\]
+```
 
 This preserves total represented weight exactly and preserves other moments
 without bias in expectation.  Compared with ordinary multinomial resampling it
@@ -277,11 +330,11 @@ This keeps source physics independent of the population-control algorithm.
 
 Material/computational losses do not delete array entries. A lost marker is represented by
 
-\[
+```math
 w_i\rightarrow0,
 \qquad
 \texttt{alive}_i\rightarrow\texttt{False}.
-\]
+```
 
 Subsequent resampling can repopulate fixed computational slots.
 
@@ -306,23 +359,23 @@ This makes 0-D coupling a geometry adapter, not a second particle algorithm.
 
 The reference radial field equation is
 
-\[
+```math
 \frac{\partial E_1}{\partial t}
 =
 \frac{\eta}{4\pi}L_rE_1
 +E_1\frac{\partial\ln\eta}{\partial t}
 -\eta G(r)\frac{\partial j_{\rm kin}}{\partial t},
-\]
+```
 
 where `L_r` is the selected circular radial diffusion operator and `G(r)` represents optional geometry factors.
 
 Constant-step BDF2 uses
 
-\[
+```math
 \left.\frac{\partial y}{\partial t}\right|_{n+1}
 \approx
 \frac{3y^{n+1}-4y^n+y^{n-1}}{2\Delta t_c}.
-\]
+```
 
 The diffusion term and multiplicative resistivity term are evaluated at the new plasma level, producing a tridiagonal implicit field solve. JONTA uses JAX's tridiagonal linear solver for this low-dimensional system.
 
@@ -337,10 +390,10 @@ The reference solver supports:
 - conducting wall: \(E_1(a)=0\);
 - vacuum-region Robin approximation:
 
-\[
+```math
 \left.\frac{\partial E_1}{\partial r}\right|_a
 =-\frac{E_1(a)}{a\ln(b/a)}.
-\]
+```
 
 Additional resistive-wall treatments may be added later.
 
@@ -348,12 +401,12 @@ Additional resistive-wall treatments may be added later.
 
 The nonlinear loop is
 
-\[
+```math
 E^{(k)}
 \rightarrow f^{n+1,(k)}
 \rightarrow j_{\rm kin}^{n+1,(k)}
 \rightarrow E^{n+1,(k+1)}.
-\]
+```
 
 The initial reference method is geometry-neutral Picard iteration with optional
 under-relaxation. A backend supplies field construction, moment deposition, and
@@ -375,12 +428,12 @@ More sophisticated Newton/JFNK coupling can replace Picard if needed. A fully im
 
 For the circular RAMc backend, the active legacy formula is implemented as a radial integral of Ohmic plus kinetic/bootstrap current followed by
 
-\[
+```math
 q(r)
 =
 \frac{r^2\epsilon}
 {(4\pi/\bar\omega_{ce})\int_0^r dr'\,r'[E_1/\bar\eta+j_{\rm kin}+j_{bs}] }.
-\]
+```
 
 The axis value is regularized with \(q(0)=q(r_1)\). Evolving `q` is optional because many validation problems prescribe it.
 
@@ -388,19 +441,19 @@ The axis value is regularized with \(q(0)=q(r_1)\). Evolving `q` is optional bec
 
 The plasma energy equations are advanced at the coupling cadence. Given an estimate of new-level power density, BDF2 for an energy density \(U\) is
 
-\[
+```math
 U^{n+1}
 =
 \frac{4U^n-U^{n-1}+2\Delta t_c P^{n+1}}{3}.
-\]
+```
 
 The new-level power may depend on \(T_e,T_i\), charge states, resistivity, radiation, and runaway moments, so it belongs inside the same outer multiphysics iteration when those feedbacks are enabled.
 
 For charge states,
 
-\[
+```math
 \frac{d\mathbf n_Z}{dt}=A(T_e,n_e)\mathbf n_Z,
-\]
+```
 
 and JONTA solves the linear new-level rate matrix implicitly with backward Euler/BDF2. Species density is renormalized after small positivity corrections.
 
@@ -467,7 +520,8 @@ The current code is a reference implementation. Important optimization/validatio
 - optimize Møller energy inversion if fixed bisection dominates large-angle cost;
 - determine the lowest-cost converged deterministic integrator;
 - establish acceptable large-angle and coupling cadences;
-- validate the conservative avalanche model against RAMc and published rates;
+- validate the conservative avalanche model against internal RAMc regression
+  behavior and published rates;
 - connect the sharded moment-reduction helper to the production multi-device
   plasma driver;
 - integrate preprocessed OPEN-ADAS tables into the full nonlinear plasma loop.

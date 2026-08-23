@@ -1,0 +1,103 @@
+{
+  "benchmark": "guiding_center_invariants",
+  "mode": "cpu_scaling",
+  "command": "/Users/jarnaud/.codex/.chatgpt-projects/g-p-6a87c93885708191b3d6f1294abd04aa/jonta/.venv/bin/python benchmarks/one_d/invariant_conservation/run.py --scaling --scaling-devices 1 2 4 8 --output-dir benchmark_results/one_d/invariant_conservation_scaling_cpu",
+  "backend": "cpu",
+  "jax_devices": [
+    "cpu:0",
+    "cpu:1",
+    "cpu:2",
+    "cpu:3",
+    "cpu:4",
+    "cpu:5",
+    "cpu:6",
+    "cpu:7"
+  ],
+  "git_commit": "f10e92c16706a49e84eb9c39fddaa0cf689b7b91",
+  "git_dirty": true,
+  "requested_device_counts": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "fixed_case": {
+    "integrator": "RK4",
+    "E1_over_Ec": 10.0,
+    "dt_over_tau_c": 1.28e-07,
+    "final_time_over_tau_c": 0.0005,
+    "total_particles": 512,
+    "timing_repeats_after_warmup": 3
+  },
+  "rows": [
+    {
+      "devices": 1,
+      "particles_per_device": 512,
+      "total_particles": 512,
+      "wall_time_s": 0.7169060419837479,
+      "timing_trials_s": [
+        0.7169060419837479,
+        0.718262708018301,
+        0.7158114589983597
+      ],
+      "pphi_max_rel_error": 4.694566315584127e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 1.0,
+      "ideal_speedup": 1.0,
+      "parallel_efficiency": 1.0
+    },
+    {
+      "devices": 2,
+      "particles_per_device": 256,
+      "total_particles": 512,
+      "wall_time_s": 0.37391999998362735,
+      "timing_trials_s": [
+        0.37391999998362735,
+        0.3759967499936465,
+        0.37264904100447893
+      ],
+      "pphi_max_rel_error": 4.694566315584127e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 1.9172711863905079,
+      "ideal_speedup": 2.0,
+      "parallel_efficiency": 0.9586355931952539
+    },
+    {
+      "devices": 4,
+      "particles_per_device": 128,
+      "total_particles": 512,
+      "wall_time_s": 0.23101066600065678,
+      "timing_trials_s": [
+        0.23101066600065678,
+        0.23031712498050183,
+        0.2333299170131795
+      ],
+      "pphi_max_rel_error": 4.694566315584127e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 3.1033460679331126,
+      "ideal_speedup": 4.0,
+      "parallel_efficiency": 0.7758365169832782
+    },
+    {
+      "devices": 8,
+      "particles_per_device": 64,
+      "total_particles": 512,
+      "wall_time_s": 0.14070570800686255,
+      "timing_trials_s": [
+        0.14321000000927597,
+        0.14070570800686255,
+        0.13923324999632314
+      ],
+      "pphi_max_rel_error": 4.694566315584127e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 5.095074337345167,
+      "ideal_speedup": 8.0,
+      "parallel_efficiency": 0.6368842921681459
+    }
+  ],
+  "interpretation": "Device counts partition a fixed total marker workload with pmap. Speedup is measured wall time divided into one-device wall time; ideal speedup equals device count. Devices are logical XLA CPU devices and do not measure physical-core scaling."
+}

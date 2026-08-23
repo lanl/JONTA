@@ -2,9 +2,14 @@
 
 ## 1. Purpose
 
-JONTA is a physics code. Passing unit tests is necessary but not sufficient. This document defines the hierarchy used to establish formula correctness, numerical convergence, statistical correctness, compatibility with RAMc, and GPU performance.
+JONTA is a physics code. Passing coding tests is necessary but not sufficient. This document defines the hierarchy used to establish formula correctness, numerical convergence, statistical correctness, compatibility with published results, and backend performance.
 
-The supplied `RAMc-doc.pdf` is the primary legacy reference for the initial guiding-center, collision, deposition, and 1-D field models. Published benchmarks cited there provide independent targets.
+Some implementation sections below use the supplied RAMc source/documentation as
+internal provenance for the initial guiding-center, collision, deposition, and
+1-D field models. Those RAMc materials are not publications and are not
+independent scientific validation targets. Paper-level claims must cite the
+published articles and digitized data recorded by the consuming benchmark
+under `benchmarks/`.
 
 ## 2. Validation philosophy
 
@@ -21,7 +26,7 @@ A physical model change must not be disguised as a numerical discrepancy.
 
 ## 3. Level 0: local/unit identities
 
-These tests should run quickly on CPU and every pull request.
+These coding tests should run quickly on CPU and every pull request.
 
 ### Orbit algebra
 
@@ -41,9 +46,9 @@ These tests should run quickly on CPU and every pull request.
 
 For every sampled cold-target event:
 
-\[
+```math
 (\gamma_3-1)+(\gamma_4-1)=\gamma_0-1.
-\]
+```
 
 Parallel momentum reconstructed from the two outgoing particles must equal incoming parallel momentum to roundoff.
 
@@ -66,7 +71,12 @@ Before capacity control, weighted gain-loss candidates must conserve kinetic ene
 
 ### 4.1 Guiding-center invariant conservation
 
-RAMc Sec. III.A / Fig. 9 verifies magnetic moment and toroidal canonical momentum in an axisymmetric system with collisions and synchrotron radiation disabled. JONTA treats them as one guiding-center invariant conservation test and measures both during the same orbit integration.
+The internal RAMc implementation documents magnetic-moment and toroidal
+canonical-momentum checks for an axisymmetric system with collisions and
+synchrotron radiation disabled. JONTA treats them as one guiding-center
+invariant-conservation benchmark and measures both during the same orbit
+integration. This is an implementation cross-check; it is not presented as a
+published comparison.
 
 Reference parameter family:
 
@@ -80,9 +90,9 @@ Reference parameter family:
 
 JONTA should repeat the test using a timestep sequence
 
-\[
+```math
 \Delta t,\;\Delta t/2,\;\Delta t/4,\ldots
-\]
+```
 
 for each candidate integrator. Error should converge at the expected order until interpolation/roundoff error dominates.
 
@@ -93,21 +103,25 @@ field grid is `E1/Ec = 0, 1, 10, 10^2, ..., 10^8` (zero is a non-log anchor),
 and its timestep grid is
 `5.12e-7, 1.28e-7, 3.2e-8, 8e-9, 2e-9, 5e-10, 1.25e-10, 1e-10` in units of
 `tau_c`. The positive-field grid spans decades; the timestep grid uses
-four-fold refinement followed by a final floating-point-floor probe. Both
-midpoint/RK2 and RK4 are run at every grid point, with `final_time=1e-5 tau_c`
-and eight particles by default. The output directory contains the CSV, three
-plots, and a JSON manifest of the exact requested grid and runtime backend.
+four-fold refinement followed by a final floating-point-floor probe. RK4,
+fixed Bogacki--Shampine 5, and adaptive Bogacki--Shampine 5(4) are run at
+every grid point, with `final_time=1e-5 tau_c` and eight particles by default.
+The output directory contains the CSV, three integrator plots, an error-floor
+plot, and a JSON manifest of the exact requested grid and runtime backend.
 
-This full grid is intentionally expensive: the final timestep can imply
-`1e8` orbit steps for one integration. A reduced CPU command must override
+This full grid is intentionally expensive: the final timestep implies
+`1e5` fixed orbit steps for one integration. A reduced CPU command must override
 both `--electric-fields` and `--dts`; its plots are execution previews, not
 acceptance evidence for the full scan. Multi-device CPU correctness is covered
-by the separate deterministic sharding test; the invariant CLI is currently a
-single-device benchmark.
+by the separate deterministic sharding test. The benchmark also exposes an
+explicit `--scaling` mode for fixed-work serial/parallel CPU timing; those
+logical-device timings are decomposition evidence, not physical-core speed
+claims.
 
 ### 4.2 Trapped/passing orbits
 
-RAMc Sec. IV.A / Fig. 23 provides qualitative orbit topology for `gamma~10` and `gamma~98`. JONTA should reproduce:
+The internal RAMc orbit study provides qualitative topology targets for
+`gamma~10` and `gamma~98`. JONTA should reproduce:
 
 - increasing banana width with trapped-particle energy;
 - outward displacement/asymmetry of high-energy passing orbits;
@@ -115,23 +129,31 @@ RAMc Sec. IV.A / Fig. 23 provides qualitative orbit topology for `gamma~10` and 
 
 ### 4.3 Ware pinch
 
-RAMc Sec. III.H / Fig. 21 gives the trapped-electron flux drift
+The internal RAMc trapped-orbit study gives the flux drift
 
-\[
+```math
 \frac{\Delta\psi_0}{\Delta t}=-R_0E_1c.
-\]
+```
 
 The normalized numerical drift should converge to the analytic value. This is a sensitive sign and electric-field coupling test.
 
 ### 4.4 Passing-electron drift
 
-RAMc Fig. 22 shows a much weaker finite-aspect-ratio outward drift for a freely accelerated passing electron. The mean drift should have the correct sign and scale and decrease appropriately in limits where finite-aspect-ratio effects vanish.
+The internal RAMc passing-orbit study shows a much weaker finite-aspect-ratio
+outward drift for a freely accelerated passing electron. The mean drift should
+have the correct sign and scale and decrease appropriately in limits where
+finite-aspect-ratio effects vanish.
 
 ## 5. Level 2: small-angle collision validation
 
 ### 5.1 Maxwellian relaxation
 
-RAMc Sec. III.B / Fig. 10 initializes particles away from equilibrium and demonstrates relaxation to a Maxwellian when electric field, radiation, and large-angle collisions are disabled.
+The self-contained Maxwellian-relaxation benchmark initializes particles away
+from equilibrium and tests relaxation to the analytic Maxwell–Jüttner
+distribution when electric field, radiation, and large-angle collisions are
+disabled. The complete problem definition, equations, driver, and generated
+figures are documented in
+benchmarks/slab/maxwellian_relaxation/README.md.
 
 Validation requirements:
 
@@ -140,25 +162,32 @@ Validation requirements:
 - pitch becomes isotropic, with `\langle\xi\rangle -> 0` and `\langle\xi^2\rangle -> 1/3`;
 - mean histogram/distribution error scales approximately
 
-\[
+```math
 \langle\Delta f\rangle\propto N^{-1/2};
-\]
+```
 
 - results converge with particle timestep independently of marker-number convergence.
 
-The JONTA temperature/initial-condition scan uses `Te=100 eV, 1 keV, 10 keV` and three deliberately non-equilibrium initial populations (broad uniform energy, hot anisotropic beam, and cold/hot bimodal).  The fixed collision timestep and relaxation interval are scaled with `(vTe/c)^3` so each temperature resolves the same thermal collision timescale.  RAMc Fig. 10 provides the legacy `Te=10 keV` and `100 eV` marker-number scaling target, with particle counts spanning roughly `2e2` to `5e4`.
+The JONTA temperature/initial-condition scan uses Te=100 eV, 1 keV, 10 keV
+and three deliberately non-equilibrium initial populations (broad uniform
+energy, hot anisotropic beam, and cold/hot bimodal). The fixed collision
+timestep and relaxation interval are scaled with (vTe/c)^3 so each
+temperature resolves the same thermal collision timescale. Marker-number and
+timestep convergence are measured against the analytic equilibrium, not an
+external digitized curve.
 
 ### 5.2 Neoclassical transport
 
-RAMc Sec. III.C / Fig. 11 benchmarks the banana-regime diffusivity against
+The internal RAMc transport implementation uses the following banana-regime
+diffusivity relation as an analytical target:
 
-\[
+```math
 \frac{\tau_cD_t}{a^4B_0^2}
 =0.689\sqrt{2\epsilon}\,q^2\frac{R_0^2}{a^2}
 \frac{E_K}{m_ec^2}
 \left(\frac{c}{a\omega_{ce}}\right)^2
 (\tau_c\nu_D).
-\]
+```
 
 Reference parameters include
 
@@ -189,17 +218,17 @@ bump at `p_b=6.0551` for `E/Ec=2.25`, and a bump at `p_b=8.59096667` for
 
 Analytical reference relations include
 
-\[
+```math
 p_O=\sqrt{2}\,\frac{(E+\alpha)(E-1)}{(1+Z)\alpha},
 \qquad
 p_X=\sqrt{\frac{1+(1+Z)/(2\sqrt{2})}{E}},
-\]
+```
 
 with the empirical pitch-integrated bump estimate
 
-\[
+```math
 p_b \simeq p_O/1.55,
-\]
+```
 
 and the runaway-tail spread estimate `(p_O-p_X)/1.8`. Guo Eq. (16) supplies
 the large-p acceleration-channel width used as an additional coefficient check.
@@ -222,7 +251,10 @@ analytical formulas.
 
 ## 6. Level 3: Dreicer production
 
-RAMc Sec. III.D / Figs. 12-14 compares Monte Carlo Dreicer generation against Kulsrud et al., Kruskal-Bernstein/Connor-Hastie asymptotics, and earlier Monte Carlo work.
+Published Dreicer studies compare Monte Carlo generation against Kulsrud et
+al., Kruskal--Bernstein/Connor--Hastie asymptotics, and earlier Monte Carlo
+work. The internal RAMc implementation is useful for parameter conventions,
+but is not the scientific comparison source.
 
 Initial benchmark family:
 
@@ -236,21 +268,23 @@ Acceptance must account for the finite thermal reservoir and the ambiguity of fi
 
 ## 7. Level 4: avalanche validation
 
-This is especially important because JONTA intentionally replaces RAMc's source-only branching implementation with conservative gain-loss physics.
+This is especially important because JONTA intentionally replaces the legacy
+source-only branching implementation with conservative gain-loss physics.
 
 ### 7.1 Source-limit recovery
 
-In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller/RAMc secondary source growth rate within statistical and cutoff errors.  The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`.  The published Monte-Carlo markers are digitized in `benchmarks/slab/avalanche_decay/reference/mcdevitt_2019_figB3_B13.csv` and are compared directly with JONTA particle results.
+In the relativistic, weak-background-depletion limit, the new operator should reproduce the conventional Møller secondary-source growth rate within statistical and cutoff errors. The implemented slab benchmark uses Appendix Fig. B3(a) of McDevitt, Guo & Tang (PPCF 61, 054008, 2019): `alpha=0.5`, `Zeff=2`, and a constant `ln Lambda=20`. The published Monte-Carlo markers are digitized in `benchmarks/slab/avalanche_decay/reference/mcdevitt_2019_figB3_B13.csv` and are compared directly with JONTA particle results.
 
 The corresponding threshold benchmark uses the zero crossing of the fitted exponential population growth and compares with McDevitt Eq. (B15),
 
-\[
+```math
 \frac{E_{av}}{E_c}=1+1.0906\left[\alpha^{0.6}(Z_{eff}+1)\right]^{0.6801}.
-\]
+```
 
 The paper reports excellent agreement for `1/alpha > 10`, with the fit tending to slightly overestimate the Monte-Carlo threshold for smaller `1/alpha`.  JONTA therefore records the sign as well as the magnitude of the threshold residual.
 
-RAMc Sec. III.E / Fig. 15 gives a fully ionized benchmark with approximately:
+The internal RAMc implementation provides a fully ionized comparison case
+with approximately:
 
 - `a/R0=1/3`;
 - `alpha=0.1`;
@@ -265,19 +299,19 @@ The production conservative model follows the mixed Fokker--Planck--Boltzmann co
 
 For the conservative model, the electron-electron Fokker--Planck remainder uses Eq. (32),
 
-\[
+```math
 \ln\Lambda_{\min}^{LA}
 =\ln\Lambda_0
 +\ln\left[2\frac{c}{v_{Te}}\sqrt{\gamma_{\min}^{LA}-1}\right],
-\]
+```
 
 which accounts for both the relativistic minimum impact parameter and removal of collisions assigned to the Møller operator.  The conventional source-only comparison uses Eq. (33),
 
-\[
+```math
 \ln\Lambda_{ee}^{RE}
 =\ln\Lambda_0
 +\ln\left[\frac{c}{v_{Te}}\sqrt{2(\gamma-1)}\right].
-\]
+```
 
 McDevitt Fig. 13 provides the decisive cutoff-invariance test.  For `Z=1`, `alpha=0.1`, `vTe/c=0.1`, `ln Lambda_0=15`, and `E/Ec=2.05, 2.25, 2.5, 3`, the growth rate should remain approximately flat over a broad interval of `gamma_min^LA-1` below the X-point and then fall once the cutoff approaches/exceeds the runaway separatrix energy.  JONTA stores digitized Fig.-13 values for a pointwise comparison, in addition to testing the plateau itself.
 
@@ -285,7 +319,9 @@ McDevitt Fig. 14 then compares the high-fidelity conservative model against the 
 
 ### 7.3 Partially ionized comparison
 
-RAMc Fig. 16 compares against Hesslow et al./CODE for a weakly ionized impurity case. That benchmark should be enabled when the corresponding screened small-/large-angle collision model is implemented.
+The published Hesslow et al./CODE comparison provides a weakly ionized
+impurity target. That benchmark should be enabled when the corresponding
+screened small-/large-angle collision model is implemented.
 
 McDevitt Appendix Fig. B4 provides a second partially ionized avalanche-threshold target.  It remains deferred until the complete screened drag and large-angle avalanche coefficients are present.  The partially screened pitch-angle operator by itself, although already validated in the spatial-transport benchmark, is not sufficient for this test.
 
@@ -329,7 +365,9 @@ reported uncertainty rather than change the numerical method.
 
 ### 7.5 Toroidal trapping / collisionality
 
-RAMc Sec. III.F / Fig. 17 shows strong collisionality dependence of avalanche growth away from the magnetic axis. The circular 1-D backend should reproduce the asymptotic behavior versus `c*tau_c/a` and radius.
+The circular 1-D backend should reproduce the published strong-collisionality
+dependence of avalanche growth away from the magnetic axis, including the
+asymptotic behavior versus `c*tau_c/a` and radius.
 
 ## 8. Level 5: radial deposition and Ohm coupling
 
@@ -345,9 +383,9 @@ For manufactured radial marker distributions:
 
 Use manufactured solutions for
 
-\[
+```math
 \partial_tE=D L_rE
-\]
+```
 
 with known boundary conditions. Verify second-order temporal convergence of BDF2 after startup and expected spatial convergence of the radial finite differences.
 
@@ -366,7 +404,10 @@ For coupled cases:
 
 ## 9. Level 6: safety-factor evolution
 
-The circular safety-factor update should be checked against direct quadrature of RAMc Eq. (95)/the active `ComputeSafetyFactor` implementation. Manufactured current profiles with analytic integrals should be included.
+The circular safety-factor update should be checked against direct quadrature of
+the legacy implementation's Eq. (95) and the active `ComputeSafetyFactor`
+implementation. Manufactured current profiles with analytic integrals should
+be included; this is an internal compatibility check, not a published target.
 
 ## 10. Level 7: electron/ion energy and charge-state coupling
 
@@ -392,10 +433,10 @@ Use constant-power and linear electron-ion exchange problems with analytic solut
 
 Numerically integrate `S_T` over momentum and verify
 
-\[
+```math
 \int d^3p\,S_T
 =(\ln2)n_T/\tau_T.
-\]
+```
 
 Sampled beta spectra should match the analytic distribution by histogram/KS-type statistical tests.
 
@@ -483,11 +524,11 @@ Before comparing any fitted diffusivity with either Figure 3 or Figure 6, the un
 transport diagnostic must visibly enter a diffusive regime.  For every
 energy/radius point JONTA records and plots
 
-\[
+```math
 \sigma_r^2(t)=\langle\Delta r^2\rangle-\langle\Delta r\rangle^2,
 \qquad
 D=\frac{1}{2}\frac{d\sigma_r^2}{dt},
-\]
+```
 
 including Monte Carlo uncertainty, the post-transient linear fit, and its
 `R^2`.  The complete variance history is retained in the benchmark output.
@@ -518,8 +559,8 @@ paper-benchmark reproductions.
 
 Figure 2 is stricter: it has no reduced/default execution mode. Its observable
 is radial localization of a seeded runaway ring, so a short trajectory that
-collapses or disperses the ring is a failed physics result, not a useful smoke
-test. The driver therefore requires explicit `--paper` and writes no PNG unless
+collapses or disperses the ring is a failed physics result, not a valid
+benchmark result. The driver therefore requires explicit `--paper` and writes no PNG unless
 the initial/final radial-localization acceptance gate passes. Failed runs write
 only the numerical diagnostics JSON.
 

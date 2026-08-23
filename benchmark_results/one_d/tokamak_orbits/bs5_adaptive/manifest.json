@@ -1,0 +1,38 @@
+{
+  "benchmark": "one_d.tokamak_orbits",
+  "mode": "trajectory",
+  "backend": "cpu",
+  "devices": [
+    "cpu:0"
+  ],
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "jax_version": "0.11.1",
+  "x64_enabled": true,
+  "integrator": "bogacki_shampine5_adaptive",
+  "dt": 2.5e-07,
+  "final_time": 0.00083,
+  "n_steps": 3320,
+  "n_particles": 2,
+  "runtime_seconds": 0.30368237500078976,
+  "timing": {
+    "compilation_excluded": true,
+    "synchronization": "jax.block_until_ready"
+  },
+  "adaptive_controls": {
+    "atol": 1e-09,
+    "rtol": 1e-09,
+    "accepted_internal_steps": 16648,
+    "rejected_internal_steps": 0,
+    "adaptive_converged": true
+  },
+  "git_commit": "f10e92c16706a49e84eb9c39fddaa0cf689b7b91",
+  "git_dirty": true,
+  "interpretation": "analytical and internal-provenance orbit topology; no published numerical target yet",
+  "outputs": [
+    "tokamak_orbit_summary.csv",
+    "tokamak_orbit_trajectories.npz",
+    "tokamak_orbit_trajectories.png",
+    "tokamak_orbit_RZ.png",
+    "tokamak_orbit_invariants.png"
+  ]
+}

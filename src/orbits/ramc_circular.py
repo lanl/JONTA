@@ -26,7 +26,9 @@ def ramc_circular_rhs(
     The implementation follows ``RHSFunctionDKEanalytic`` in the supplied
     RAMc source for the axisymmetric, unperturbed magnetic field. Collisional
     friction is excluded because collisions are handled by a separate
-    operator. Synchrotron radiation is retained in the deterministic orbit.
+    operator. The returned deterministic map combines Lorentz guiding-center
+    characteristics with the synchrotron right-hand-side operator; the
+    physical Vlasov transport term itself contains only the Lorentz force.
     """
 
     del time

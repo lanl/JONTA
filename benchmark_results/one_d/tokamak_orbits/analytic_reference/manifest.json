@@ -1,0 +1,17 @@
+{
+  "benchmark": "one_d.tokamak_orbits",
+  "mode": "analytic_equation_reference",
+  "solver": "scipy.solve_ivp:DOP853",
+  "rtol": 2e-13,
+  "atol": 2e-14,
+  "dt_output": 2.5e-07,
+  "final_time": 0.00083,
+  "n_samples": 3321,
+  "runtime_seconds": 3.645815625000978,
+  "git_commit": "f10e92c16706a49e84eb9c39fddaa0cf689b7b91",
+  "git_dirty": true,
+  "outputs": [
+    "analytic_reference_trajectories.npz",
+    "manifest.json"
+  ]
+}

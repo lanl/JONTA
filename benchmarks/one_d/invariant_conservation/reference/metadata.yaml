@@ -1,9 +1,11 @@
 benchmark: one_d.invariant_conservation
-status: pending_digitization
-sources:
-  - key: ramc_documentation
-    citation: "RAMc documentation, Sec. III.A, Fig. 9"
-    source_document: RAMc-doc.pdf
-    source_url: null
-    comparison_targets: [toroidal_canonical_momentum, magnetic_moment]
+status: analytical_target_driver_available
+sources: []
+internal_provenance:
+  - description: >-
+      The initial orbit parameterization follows the internal RAMc reference
+      implementation. This provenance is not a published source or an
+      independent validation target.
+    internal_source_document: RAMc-doc.pdf
+comparison_targets: [toroidal_canonical_momentum, magnetic_moment]
 reference_data: []

@@ -1,0 +1,3 @@
+marker,label,expected_classification,observed_classification,classification_match,r_min,r_max,banana_width,xi_sign_changes,bounce_period,max_rel_pphi_error,max_rel_mu_error,finite,runtime_seconds
+0,trapped,trapped,trapped,True,0.3851712019815243,0.4,0.014828798018475697,20,8.274849291756541e-05,2.1842406830278776e-07,8.997724523059706e-09,True,0.10432808299083263
+1,passing,passing,passing,True,0.3719880603306317,0.4,0.028011939669368324,0,nan,7.218088902362479e-07,9.070835159525921e-09,True,0.10432808299083263

@@ -1,0 +1,37 @@
+benchmark: one_d.tokamak_orbits
+geometry: circular_axisymmetric
+description: >-
+  Collisionless trapped and passing guiding-center trajectories in the
+  unshifted circular tokamak field.
+precision: float64
+physics:
+  electric_field: false
+  synchrotron: false
+  small_angle_collisions: false
+  large_angle_collisions: false
+  sources: false
+case:
+  gamma_trapped: 10.0
+  xi_trapped: -0.08
+  gamma_passing: 10.0
+  xi_passing: -0.80
+  r0: 0.40
+  theta0: 0.0
+  phi0: 0.0
+  q0: 2.1
+  q2: 2.0
+  epsilon: 0.3333333333333333
+  c_tau_over_a: 2300000.0
+  b0_t: 3.0
+  a_m: 1.0
+  dt: 2.5e-7
+  # Ten trapped bounce periods (the passing orbit completes many poloidal turns).
+  final_time: 8.3e-4
+integrator:
+  baseline: rk4
+  ramc_reference: bogacki_shampine5_adaptive
+  fixed_high_order: bogacki_shampine5
+scaling:
+  total_particles: 256
+  devices: [1, 2, 4, 8]
+  repeats: 3

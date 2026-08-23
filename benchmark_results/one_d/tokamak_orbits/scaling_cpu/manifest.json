@@ -1,0 +1,26 @@
+{
+  "benchmark": "one_d.tokamak_orbits",
+  "mode": "strong_scaling",
+  "backend": "cpu",
+  "devices": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "available_cpu_devices": 8,
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "jax_version": "0.11.1",
+  "x64_enabled": true,
+  "total_particles": 256,
+  "repeats": 3,
+  "integrator": "rk4",
+  "dt": 2.5e-07,
+  "final_time": 0.00083,
+  "git_commit": "f10e92c16706a49e84eb9c39fddaa0cf689b7b91",
+  "git_dirty": true,
+  "outputs": [
+    "tokamak_orbit_scaling.csv",
+    "tokamak_orbit_scaling.png"
+  ]
+}
