@@ -938,7 +938,10 @@ def _write_particle_vortex_results(results, output_dir: Path):
             speed = np.sqrt(gp * gp + gxi * gxi)
             u = gp / np.maximum(speed, 1.0e-300)
             v = gxi / np.maximum(speed, 1.0e-300)
-            reliable = ff > np.max(ff) * 2.0e-4
+            # Guo-style flow plots seed trajectories throughout phase space,
+            # including low-density runaway tails. Keep only numerical zeros
+            # excluded; higher thresholds hide most of momentum space.
+            reliable = ff > np.max(ff) * 1.0e-10
             u = np.where(reliable, u, 0.0)
             v = np.where(reliable, v, 0.0)
             # Long white streamlines show complete probability-current
@@ -951,7 +954,7 @@ def _write_particle_vortex_results(results, output_dir: Path):
                 u.T,
                 v.T,
                 color="white",
-                density=1.6,
+                density=2.4,
                 linewidth=0.45,
                 arrowsize=0.75,
                 minlength=0.2,

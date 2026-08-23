@@ -53,7 +53,7 @@
   },
   "reference": "Guo, McDevitt & Tang, PPCF 59, 044003 (2017), Figs. 9-12",
   "runtime": {
-    "git_commit": "86a574ae15415cfb1d12d3e744fdaa8b8c8190b7",
+    "git_commit": "a74e3cc05c648323e031b0e21c6c7426aff2e088",
     "jax": "0.11.1",
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "python": "3.12.10"
