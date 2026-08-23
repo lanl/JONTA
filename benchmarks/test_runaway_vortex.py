@@ -932,7 +932,9 @@ def _write_particle_vortex_results(results, output_dir: Path):
             gxi = gxi[mask_p]
             positive = ff[ff > 0.0]
             floor = max(np.max(ff) * 1.0e-6, np.min(positive) if positive.size else 1.0e-30)
-            image = ax.pcolormesh(pp, xi, np.log10(np.maximum(ff.T, floor)), shading="auto")
+            log_density = np.log10(np.maximum(ff.T, floor))
+            levels = np.linspace(np.nanmin(log_density), np.nanmax(log_density), 40)
+            image = ax.contourf(pp, xi, log_density, levels=levels, cmap="viridis")
             speed = np.sqrt(gp * gp + gxi * gxi)
             u = gp / np.maximum(speed, 1.0e-300)
             v = gxi / np.maximum(speed, 1.0e-300)
@@ -956,7 +958,7 @@ def _write_particle_vortex_results(results, output_dir: Path):
                 linewidth=0.25,
                 angles="xy",
                 scale_units="xy",
-                scale=14.0,
+                scale=4.5,
                 pivot="mid",
             )
             ax.set_title(f"E/Ec={result['e_over_ec']:g}")
