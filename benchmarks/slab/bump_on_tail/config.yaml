@@ -1,0 +1,21 @@
+benchmark: slab.bump_on_tail
+reference: Guo_2017_PPCF_PhaseSpaceRunaway.pdf
+fields_over_critical: [2.0, 2.25, 2.5]
+markers: 4096
+seed: 41
+dt_tau_c: 0.004
+total_time_tau_c: 60.0
+burn_time_tau_c: 30.0
+momentum_bins: 320
+phase_bins: [120, 72]
+phase_sample_every: 25
+physics:
+  electric_field: true
+  synchrotron: true
+  small_angle_collisions: true
+  large_angle_collisions: false
+  plasma_coupling: false
+execution:
+  serial: true
+  parallel_cpu: true
+  parallel_gpu: planned

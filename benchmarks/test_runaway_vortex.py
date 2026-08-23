@@ -477,9 +477,8 @@ def _make_vortex_kernel(
             state = small_angle_step(
                 state, background, 0.5 * dt, base_key, 2 * i, config
             )
-            rhs = lambda kin, time: zero_d_rhs(
-                kin, time, field, alpha_syn=alpha
-            )
+            def rhs(kin, time):
+                return zero_d_rhs(kin, time, field, alpha_syn=alpha)
             kin = rk4_step(rhs, state.kin, i * dt, dt)
             state = ParticleState(kin, state.weight, state.alive, state.pid)
             state = small_angle_step(
@@ -832,6 +831,7 @@ def _write_particle_vortex_results(results, output_dir: Path):
             "published_p_bump",
             "relative_error",
             "guo_eq24_p_bump",
+            "runtime_seconds",
         ]
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
@@ -845,6 +845,7 @@ def _write_particle_vortex_results(results, output_dir: Path):
                     "published_p_bump": ref,
                     "relative_error": rel,
                     "guo_eq24_p_bump": float(guo_bump_momentum(e, DEFAULT_ALPHA, DEFAULT_Z)),
+                    "runtime_seconds": result.get("runtime_seconds", np.nan),
                 }
             )
 

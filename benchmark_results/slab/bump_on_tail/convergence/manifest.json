@@ -1,0 +1,57 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0"
+    ],
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.bump_on_tail",
+  "command_arguments": {
+    "bins": 320,
+    "burn_time": 30.0,
+    "convergence": true,
+    "devices": 1,
+    "dt": 0.004,
+    "fields": [
+      2.0,
+      2.25,
+      2.5
+    ],
+    "markers": 4096,
+    "mode": "serial",
+    "output_dir": "benchmark_results/slab/bump_on_tail/convergence",
+    "phase_bins": [
+      120,
+      72
+    ],
+    "phase_sample_every": 25,
+    "scaling": false,
+    "scaling_devices": [
+      1,
+      2,
+      4
+    ],
+    "scaling_markers": 4096,
+    "seed": 41,
+    "total_time": 60.0
+  },
+  "interpretation": "Resolution and independent-seed study around the Guo bump diagnostic; not a universal tolerance claim.",
+  "outputs": {
+    "csv": "convergence.csv",
+    "plot": "convergence.png"
+  },
+  "reference": "Guo, McDevitt & Tang, PPCF 59, 044003 (2017), Figs. 9-12",
+  "runtime": {
+    "git_commit": "5b14d1fe79f8172b273429139b2013e7bae8fbfa",
+    "jax": "0.11.1",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "status": "reproducibility_record",
+  "timing": {
+    "compilation_excluded": true,
+    "runtime_field": "runtime_seconds",
+    "synchronization": "host conversion of JAX results"
+  }
+}
