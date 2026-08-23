@@ -97,6 +97,10 @@ The high-fidelity record uses 65,536 markers per field, \(\Delta
 t=4\times10^{-3}\tau_c\), 60 \(\tau_c\) total time, and 30 \(\tau_c\) burn-in.
 The bump locations are:
 
+The phase-space diagnostic uses filled \(\operatorname{contourf}\) levels for
+\(\log_{10}\langle f\rangle\) with a sparse white quiver overlay for the
+reconstructed momentum-space probability flow.
+
 | \(E/E_c\) | JONTA bump \(p_b/(m_ec)\) | Guo target | relative error | runtime [s] |
 |---:|---:|---:|---:|---:|
 | 2.00 | no bump | no bump | — | 24.176 |
