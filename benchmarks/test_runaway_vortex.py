@@ -951,7 +951,7 @@ def _write_particle_vortex_results(results, output_dir: Path):
                 u.T,
                 v.T,
                 color="white",
-                density=1.0,
+                density=1.6,
                 linewidth=0.45,
                 arrowsize=0.75,
                 minlength=0.2,
