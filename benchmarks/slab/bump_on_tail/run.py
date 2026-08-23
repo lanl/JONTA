@@ -210,7 +210,7 @@ def _parse_args():
     parser.add_argument("--mode", choices=("serial", "parallel"), default="serial")
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--fields", type=float, nargs="+", default=list(DEFAULT_FIELDS))
-    parser.add_argument("--markers", type=int, default=4096)
+    parser.add_argument("--markers", type=int, default=65_536)
     parser.add_argument("--seed", type=int, default=41)
     parser.add_argument("--dt", type=float, default=DEFAULT_VORTEX_DT)
     parser.add_argument("--total-time", type=float, default=DEFAULT_VORTEX_TOTAL_TIME)
@@ -220,7 +220,7 @@ def _parse_args():
     parser.add_argument("--phase-sample-every", type=int, default=25)
     parser.add_argument("--scaling", action="store_true")
     parser.add_argument("--scaling-devices", type=int, nargs="+", default=(1, 2, 4))
-    parser.add_argument("--scaling-markers", type=int, default=4096)
+    parser.add_argument("--scaling-markers", type=int, default=65_536)
     parser.add_argument("--convergence", action="store_true")
     return parser.parse_args()
 

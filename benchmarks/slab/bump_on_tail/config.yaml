@@ -1,7 +1,7 @@
 benchmark: slab.bump_on_tail
 reference: Guo_2017_PPCF_PhaseSpaceRunaway.pdf
 fields_over_critical: [2.0, 2.25, 2.5]
-markers: 4096
+markers: 65536
 seed: 41
 dt_tau_c: 0.004
 total_time_tau_c: 60.0

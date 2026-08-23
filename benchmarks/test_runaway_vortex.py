@@ -939,7 +939,26 @@ def _write_particle_vortex_results(results, output_dir: Path):
             reliable = ff > np.max(ff) * 2.0e-4
             u = np.where(reliable, u, 0.0)
             v = np.where(reliable, v, 0.0)
-            ax.streamplot(pp, xi, u.T, v.T, density=1.1, linewidth=0.7, arrowsize=0.8)
+            # Thin white arrows preserve the contour structure while showing
+            # the direction of the reconstructed momentum-space probability
+            # current.  Subsampling keeps the overlay legible at 300 dpi.
+            p_grid, xi_grid = np.meshgrid(pp, xi, indexing="ij")
+            stride_p = max(1, pp.size // 28)
+            stride_xi = max(1, xi.size // 20)
+            ax.quiver(
+                p_grid[::stride_p, ::stride_xi],
+                xi_grid[::stride_p, ::stride_xi],
+                u[::stride_p, ::stride_xi],
+                v[::stride_p, ::stride_xi],
+                color="white",
+                alpha=0.9,
+                width=0.0015,
+                linewidth=0.25,
+                angles="xy",
+                scale_units="xy",
+                scale=14.0,
+                pivot="mid",
+            )
             ax.set_title(f"E/Ec={result['e_over_ec']:g}")
             ax.set_xlabel(r"$p/(m_e c)$")
             ax.set_ylabel(r"$\xi$")

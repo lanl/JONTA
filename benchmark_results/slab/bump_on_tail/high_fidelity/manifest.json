@@ -1,0 +1,67 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0",
+      "cpu:1",
+      "cpu:2",
+      "cpu:3",
+      "cpu:4",
+      "cpu:5",
+      "cpu:6",
+      "cpu:7"
+    ],
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.bump_on_tail",
+  "command_arguments": {
+    "bins": 320,
+    "burn_time": 30.0,
+    "convergence": false,
+    "devices": 8,
+    "dt": 0.004,
+    "fields": [
+      2.0,
+      2.25,
+      2.5
+    ],
+    "markers": 65536,
+    "mode": "parallel",
+    "output_dir": "benchmark_results/slab/bump_on_tail/high_fidelity",
+    "phase_bins": [
+      120,
+      72
+    ],
+    "phase_sample_every": 25,
+    "scaling": false,
+    "scaling_devices": [
+      1,
+      2,
+      4
+    ],
+    "scaling_markers": 65536,
+    "seed": 41,
+    "total_time": 60.0
+  },
+  "interpretation": "Particle Monte-Carlo reproduction record using the production linearized small-angle operator, electric acceleration, and synchrotron reaction.",
+  "outputs": {
+    "bump_plot": "runaway_vortex_bump_comparison.png",
+    "csv": "runaway_vortex_particle_results.csv",
+    "distribution_plot": "runaway_vortex_energy_distribution.png",
+    "phase_plot": "runaway_vortex_phase_space_flux.png",
+    "runtime_plot": "runtime.png"
+  },
+  "reference": "Guo, McDevitt & Tang, PPCF 59, 044003 (2017), Figs. 9-12",
+  "runtime": {
+    "git_commit": "8bf8b56a3198f78883172fed53742f884a610dab",
+    "jax": "0.11.1",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "status": "reproducibility_record",
+  "timing": {
+    "compilation_excluded": true,
+    "runtime_field": "runtime_seconds",
+    "synchronization": "host conversion of JAX results"
+  }
+}

@@ -22,6 +22,8 @@ benchmark_results/*
 !benchmark_results/slab/bump_on_tail/
 !benchmark_results/slab/bump_on_tail/serial/
 !benchmark_results/slab/bump_on_tail/serial/*
+!benchmark_results/slab/bump_on_tail/high_fidelity/
+!benchmark_results/slab/bump_on_tail/high_fidelity/*
 !benchmark_results/slab/bump_on_tail/scaling/
 !benchmark_results/slab/bump_on_tail/scaling/*
 !benchmark_results/slab/bump_on_tail/convergence/

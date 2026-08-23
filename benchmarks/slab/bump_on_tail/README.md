@@ -56,10 +56,19 @@ PYTHONPATH=src:. JAX_PLATFORMS=cpu \
 ~~~
 
 The resolved parameters are recorded in config.yaml and in the generated
-manifest. The command writes the particle summary CSV, energy-distribution
-comparison, bump-momentum comparison, reconstructed phase-space current, and
-runtime.png. Timing excludes compilation: each field case is warmed once,
-then run again with a synchronized host transfer.
+manifest. The default production configuration now uses 65,536 markers per
+field. For the high-fidelity record included here, use the eight-way CPU
+particle decomposition:
+
+~~~bash
+XLA_FLAGS=--xla_force_host_platform_device_count=8
+PYTHONPATH=src:. JAX_PLATFORMS=cpu .venv/bin/python benchmarks/slab/bump_on_tail/run.py --mode parallel --devices 8 --markers 65536 --output-dir benchmark_results/slab/bump_on_tail/high_fidelity
+~~~
+
+The command writes the particle summary CSV, energy-distribution comparison,
+bump-momentum comparison, reconstructed phase-space current, and runtime.png.
+Timing excludes compilation: each field case is warmed once, then run again
+with a synchronized host transfer.
 
 ## Convergence and CPU scaling
 
@@ -84,21 +93,24 @@ PYTHONPATH=src:. JAX_PLATFORMS=cpu \
 
 ## Recorded result
 
-The serial record uses 4096 markers per field, \(\Delta t=4\times10^{-3}\tau_c\),
-60 \(\tau_c\) total time, and 30 \(\tau_c\) burn-in. The bump locations are:
+The high-fidelity record uses 65,536 markers per field, \(\Delta
+t=4\times10^{-3}\tau_c\), 60 \(\tau_c\) total time, and 30 \(\tau_c\) burn-in.
+The bump locations are:
 
 | \(E/E_c\) | JONTA bump \(p_b/(m_ec)\) | Guo target | relative error | runtime [s] |
 |---:|---:|---:|---:|---:|
 | 2.00 | no bump | no bump | — | 24.176 |
-| 2.25 | 6.1029 | 6.0551 | 0.79% | 24.203 |
-| 2.50 | 7.7865 | 8.5910 | −9.36% | 24.181 |
+| 2.25 | 5.9890 | 6.0551 | −1.09% | 51.270 |
+| 2.50 | 8.6560 | 8.5910 | 0.76% | 50.849 |
 
 The \(E/E_c=2\) distribution is monotone in the pitch-integrated runaway
 interval, while the higher-field cases develop the expected non-monotone tail.
 The finite-marker bump estimate is noisy; the convergence CSV and plot are the
 required evidence for changing marker count or timestep.
 
-The 8-device CPU run used 4096 total markers at \(E/E_c=2.25\):
+The earlier 8-device scaling record used 4096 total markers at \(E/E_c=2.25\).
+It remains a low-resolution scaling reference; the high-fidelity production
+record above is the physics result.
 
 | CPU devices | wall time [s] | speedup |
 |---:|---:|---:|
@@ -111,13 +123,13 @@ These are reproducibility records on the development machine, not universal
 performance or acceptance limits. GPU execution uses the same production
 kernel when a supported backend is available.
 
-![Energy distributions](../../../benchmark_results/slab/bump_on_tail/serial/runaway_vortex_energy_distribution.png)
+![Energy distributions](../../../benchmark_results/slab/bump_on_tail/high_fidelity/runaway_vortex_energy_distribution.png)
 
-![Bump comparison](../../../benchmark_results/slab/bump_on_tail/serial/runaway_vortex_bump_comparison.png)
+![Bump comparison](../../../benchmark_results/slab/bump_on_tail/high_fidelity/runaway_vortex_bump_comparison.png)
 
-![Phase-space current](../../../benchmark_results/slab/bump_on_tail/serial/runaway_vortex_phase_space_flux.png)
+![Phase-space current](../../../benchmark_results/slab/bump_on_tail/high_fidelity/runaway_vortex_phase_space_flux.png)
 
-![Runtime](../../../benchmark_results/slab/bump_on_tail/serial/runtime.png)
+![Runtime](../../../benchmark_results/slab/bump_on_tail/high_fidelity/runtime.png)
 
 ![Convergence](../../../benchmark_results/slab/bump_on_tail/convergence/convergence.png)
 
