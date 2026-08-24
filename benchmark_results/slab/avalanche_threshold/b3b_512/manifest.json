@@ -47,7 +47,7 @@
   },
   "reference": "McDevitt et al. 2019 PPCF 61 054008, Fig. B3(b)",
   "runtime": {
-    "git_commit": "a41f7ceaa49cd2daad36c1d305489bdf1bcd1c2c",
+    "git_commit": "f1ffb635cfb037021201b715db18540b6feb986f",
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "python": "3.12.10"
   },
