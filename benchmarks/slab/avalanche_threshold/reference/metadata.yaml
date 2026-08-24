@@ -1,0 +1,18 @@
+benchmark: slab.avalanche_threshold
+status: reference_data_available
+sources:
+  - key: mcdevitt_2019_avalanche
+    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 054008 (2019)"
+    source_document: McDevitt_2019_PPCF_Avalanche.pdf
+    source_url: https://doi.org/10.1088/1361-6587/ab0d6d
+    figure: B3(b)
+    comparison_targets: [avalanche_threshold, threshold_fit]
+reference_data:
+  - file: mcdevitt_2019_figB3b.csv
+    provenance: manual digitization of the open-circle Monte Carlo markers in Fig. B3(b)
+    uncertainty: >-
+      Approximate raster digitization uncertainty of about 0.03 in E_av/E_c;
+      values are comparison data, not exact machine-readable source values.
+analytic_reference:
+  equation: "E_av/E_c = 1 + 1.0906 [alpha^0.6 (Z_eff + 1)]^0.6801"
+  source: "McDevitt et al. 2019, Appendix Eq. (B15)"

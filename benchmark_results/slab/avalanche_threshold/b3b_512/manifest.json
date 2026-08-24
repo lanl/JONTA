@@ -1,0 +1,58 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0",
+      "cpu:1",
+      "cpu:2",
+      "cpu:3",
+      "cpu:4",
+      "cpu:5"
+    ],
+    "jax": "0.11.1",
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.avalanche_threshold.b3b",
+  "outputs": [
+    "b3b_threshold.csv",
+    "b3b_threshold_scan.csv",
+    "b3b_histories.csv",
+    "b3b_threshold.png",
+    "b3b_histories.png"
+  ],
+  "parameters": {
+    "coulomb_log": 20.0,
+    "dt_tau_c": 0.0025,
+    "fit_start_fraction": 0.6,
+    "gamma_min_la": 1.02,
+    "inv_alpha": [
+      1.0,
+      2.0,
+      2.5,
+      4.0,
+      8.0,
+      10.0,
+      20.0,
+      40.0,
+      80.0
+    ],
+    "large_angle_dt_tau_c": 0.05,
+    "markers": 512,
+    "replicas": 6,
+    "total_time_tau_c": 100.0,
+    "zeff": [
+      1.0,
+      5.0
+    ]
+  },
+  "reference": "McDevitt et al. 2019 PPCF 61 054008, Fig. B3(b)",
+  "runtime": {
+    "git_commit": "a41f7ceaa49cd2daad36c1d305489bdf1bcd1c2c",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "uncertainty": {
+    "growth_rates": "replica SEM plus fit-window RMS in quadrature",
+    "threshold": "linear zero-crossing propagation using total growth-rate sigma"
+  }
+}

@@ -1,0 +1,74 @@
+# McDevitt et al. 2019 Fig. B3(b) slab avalanche-threshold scan.
+# For this benchmark field.e_scan stores the published 1/alpha grid.
+model:
+  geometry: slab
+  precision: float64
+execution:
+  mode: parallel
+  platform: cpu
+  n_devices: 6
+geometry:
+  n_radial: 2
+  minor_radius_cm: 100.0
+  epsilon: 0.0
+  c_tau_over_a: 1.0
+  a_omega_ce_over_c: 1.0
+  alpha_syn: 0.0
+field:
+  e_scan: [1.0, 2.0, 2.5, 4.0, 8.0, 10.0, 20.0, 40.0, 80.0]
+background:
+  ne_cm3: 1.0e14
+  te_ev: 2555.999
+  ti_ev: 2555.999
+  zeff: 1.0
+  coulomb_log: 20.0
+particles:
+  markers: 512
+  total_weight: 1.0
+  seed: 3
+  gamma_range: [10.0, 20.0]
+  xi_range: [-1.0, -0.8]
+  radius_range: [0.0, 0.0]
+timesteps:
+  dt_particle: 0.0025
+  large_angle_every: 20
+  coupling_every: 1
+  diagnostics_every: 1
+collisions:
+  small_angle:
+    pitch_scattering: true
+    friction: true
+    energy_scattering: false
+    n_sa: 100
+    p_min: 0.3
+  large_angle:
+    enabled: true
+    gamma_min: 1.02
+    max_collision_fraction: 0.20
+    conservative: false
+population:
+  capacity: 512
+  thinning: stratified
+  overflow_only: true
+  thinning_frequency: 1
+diagnostics:
+  fit_start_fraction: 0.6
+  bins: 320
+  sample_every: 40
+benchmark:
+  name: mcdevitt-2019-b3b-slab
+  reference: reference/mcdevitt_2019_figB3b.csv
+  description: Slab avalanche threshold versus inverse synchrotron parameter from McDevitt Fig. B3(b).
+  replicas: 6
+  total_time: 100.0
+  burn_time: 60.0
+reference:
+  data_file: reference/mcdevitt_2019_figB3b.csv
+  comparison: avalanche_threshold
+  growth_rate_sem: 0.0
+  r2_min: 0.95
+output:
+  directory: ../../../benchmark_results/slab/avalanche_threshold/b3b_512
+  formats: [json, csv, png]
+  save_histories: true
+  save_final_state: false

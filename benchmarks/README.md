@@ -18,7 +18,7 @@ before constructing JAX arrays, and archive its resolved form with the result.
 Current benchmark families:
 
 - [`slab/`](slab/): Maxwellian relaxation, bump-on-tail, Dreicer generation,
-  and avalanche/decay.
+  avalanche growth, and avalanche threshold.
 - [`one_d/`](one_d/): invariant conservation, trapped/passing tokamak orbits,
   radial transport, and radial avalanche.
 
