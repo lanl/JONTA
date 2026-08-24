@@ -55,12 +55,12 @@ def _reference_lookup(path):
 def _write_tables(output, rows, histories):
     if rows:
         with (output / "b3a_growth.csv").open("w", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
     if histories:
         with (output / "b3a_histories.csv").open("w", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=list(histories[0]))
+            writer = csv.DictWriter(stream, fieldnames=list(histories[0]), lineterminator="\n")
             writer.writeheader()
             writer.writerows(histories)
 
