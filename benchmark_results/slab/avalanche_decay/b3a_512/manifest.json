@@ -1,0 +1,63 @@
+{
+  "backend": {
+    "devices": [
+      "cpu:0",
+      "cpu:1",
+      "cpu:2",
+      "cpu:3",
+      "cpu:4",
+      "cpu:5"
+    ],
+    "jax": "0.11.1",
+    "platform": "cpu",
+    "precision": "float64"
+  },
+  "benchmark": "slab.avalanche_decay.b3a",
+  "outputs": [
+    "b3a_growth.csv",
+    "b3a_histories.csv",
+    "b3a_growth.png",
+    "b3a_histories.png"
+  ],
+  "parameters": {
+    "alpha_syn": 0.5,
+    "coulomb_log": 20.0,
+    "dt_tau_c": 0.0025,
+    "energy_scattering": false,
+    "fields": [
+      2.63361,
+      2.73198,
+      2.83239,
+      2.93134
+    ],
+    "fit_start_fraction": 0.35,
+    "gamma_min": 1.02,
+    "large_angle_dt_tau_c": 0.05,
+    "large_angle_enabled": true,
+    "markers": 512,
+    "replicas": 6,
+    "sample_dt_tau_c": 0.1,
+    "seed_start": 3,
+    "source_only_moller": true,
+    "total_time_tau_c": 300.0,
+    "vte_over_c": 0.10001965068380106,
+    "zeff": 2.0
+  },
+  "reference": "McDevitt et al. 2019 PPCF 61 054008, Fig. B3(a)",
+  "resolution": {
+    "max_event_probability": 0.07656625083509609,
+    "small_angle_n_sa": 100,
+    "small_angle_p_min": 0.3,
+    "small_angle_substeps": 15
+  },
+  "runtime": {
+    "git_commit": "d06408e",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "uncertainty": {
+    "fit_window": "sample RMS across fit-start offsets; not divided by sqrt(replicas)",
+    "reported_plot_error": "sqrt(replica SD^2 + fit-window RMS^2)",
+    "stochastic": "replica sample SEM"
+  }
+}
