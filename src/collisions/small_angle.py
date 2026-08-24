@@ -9,6 +9,8 @@ Guo & Tang, PPCF 61, 024004 (2019).
 
 from __future__ import annotations
 
+import math
+
 import jax
 import jax.numpy as jnp
 from jax.scipy.special import erf
@@ -81,7 +83,11 @@ def partial_screening_friction_coefficient(
     """
 
     p = momentum_from_gamma(gamma)
-    p_safe = jnp.maximum(p, 1.0e-14)
+    # All coefficient evaluations must use the same resolved lower momentum
+    # as the timestep bound.  Using an independent machine-scale floor here
+    # makes the energy-diffusion drift singular below ``config.p_min`` while
+    # the host-side subcycle estimate assumes a finite resolved frequency.
+    p_safe = jnp.maximum(p, config.p_min)
     v = p_safe / jnp.maximum(gamma, 1.0)
     vte = thermal_speed_over_c(te)
     x = v / vte
@@ -146,7 +152,10 @@ def pitch_scattering_frequency(
     """
 
     p = momentum_from_gamma(gamma)
-    p_safe = jnp.maximum(p, 1.0e-14)
+    # The test-particle coefficients are singular at p=0.  The configured
+    # lower momentum is the resolved kinetic-domain boundary; it must be used
+    # consistently when estimating the collision frequency.
+    p_safe = jnp.maximum(p, config.p_min)
     v = p / jnp.maximum(gamma, 1.0)
     v_safe = jnp.maximum(v, 1.0e-14)
     vte = thermal_speed_over_c(te)
@@ -301,7 +310,10 @@ def small_angle_step(
         coulog,
         config,
     )
-    nu_dt = jnp.minimum(nu_d * dt, config.max_nu_dt)
+    # Do not clip nu*dt.  Clipping changes the pitch operator while the
+    # friction and energy-diffusion terms still use the requested dt.  Callers
+    # must subcycle until this increment is below the configured N_SA target.
+    nu_dt = nu_d * dt
     z_pitch = normal_by_particle(base_key, particles.pid, global_step, stream=11)
     sigma_xi = jnp.sqrt(jnp.maximum((1.0 - xi * xi) * nu_dt, 0.0))
     xi_scattered = reflect_pitch(xi * (1.0 - nu_dt) + z_pitch * sigma_xi)
@@ -343,8 +355,77 @@ def small_angle_step(
         gamma_new + gamma_conv * dt + z_energy * sigma_gamma,
         gamma_new,
     )
-    gamma_new = reflect_gamma(gamma_new)
+    # Default retains RAMc's reflecting gamma=1 boundary.  A configured
+    # thermal floor instead clips into the reservoir cell; the caller then
+    # performs Maxwellian re-entry without artificial energy reflection.
+    gamma_new = jnp.where(
+        jnp.asarray(config.gamma_floor) > 1.0,
+        jnp.maximum(gamma_new, config.gamma_floor),
+        reflect_gamma(gamma_new),
+    )
 
     phi_new = jnp.mod(kin.phi, 2.0 * PI)
     new_kin = KinematicState(gamma_new, xi_new, kin.x, kin.y, phi_new)
     return ParticleState(new_kin, particles.weight, particles.alive, particles.pid)
+
+
+def required_small_angle_substeps(
+    dt: float,
+    background: BackgroundProfiles,
+    config: SmallAngleConfig,
+) -> int:
+    """Return a static substep count satisfying the N_SA collision target.
+
+    The bound is evaluated at the configured lowest resolved momentum and at
+    every supplied background profile point.  It is intentionally host-side:
+    accelerator kernels receive the resulting fixed loop count.
+    """
+
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    p_floor = max(
+        float(config.p_min),
+        math.sqrt(max(float(config.gamma_floor) ** 2 - 1.0, 0.0)),
+    )
+    gamma_floor = math.sqrt(1.0 + p_floor * p_floor)
+    gamma = jnp.full_like(background.te_ev, gamma_floor)
+    ne_norm = background.ne_cm3 / config.ne0_cm3
+    coulog = thermal_coulomb_log(background.ne_cm3, background.te_ev)
+    nu = pitch_scattering_frequency(
+        gamma,
+        background.zeff,
+        ne_norm,
+        background.te_ev,
+        coulog,
+        config,
+    )
+    max_nu = float(jax.device_get(jnp.max(nu)))
+    return max(1, int(math.ceil(float(dt) * max_nu * int(config.n_sa))))
+
+
+def small_angle_subcycle(
+    particles: ParticleState,
+    background: BackgroundProfiles,
+    dt: float,
+    base_key,
+    global_step: int,
+    config: SmallAngleConfig,
+    n_substeps: int,
+) -> ParticleState:
+    """Apply the small-angle operator with a fixed JAX substep count."""
+
+    if isinstance(n_substeps, int) and n_substeps < 1:
+        raise ValueError("n_substeps must be positive")
+    dt_sub = dt / n_substeps
+
+    def body(index, state):
+        return small_angle_step(
+            state,
+            background,
+            dt_sub,
+            base_key,
+            global_step * n_substeps + index,
+            config,
+        )
+
+    return jax.lax.fori_loop(0, n_substeps, body, particles)

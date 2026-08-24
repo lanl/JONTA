@@ -8,6 +8,7 @@ convert selected sections to legacy JAX-facing config containers.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields
+from math import isclose
 from pathlib import Path
 from typing import Any, Literal, Mapping
 
@@ -19,6 +20,7 @@ from .config import (
     MollerConfig,
     OrbitNormalization,
     SmallAngleConfig,
+    ThermalSourceConfig,
 )
 from .precision import configure_precision
 
@@ -206,12 +208,14 @@ class SmallAngleSettings:
     pitch_scattering: bool = True
     friction: bool = True
     energy_scattering: bool = True
-    max_nu_dt: float = 0.5
+    n_sa: int = 100
+    p_min: float = 1.0e-3
     partial_screening: bool = False
     relativistic_coulog: bool = False
     large_angle_reduced_coulog: bool = False
     large_angle_source_coulog: bool = False
     large_angle_gamma_min: float = 1.02
+    gamma_floor: float = 1.0
     impurity_fraction: float = 0.0
     impurity_nuclear_charge: float = 1.0
     impurity_charge_state: float = 1.0
@@ -220,10 +224,14 @@ class SmallAngleSettings:
     screening_k: float = 5.0
 
     def __post_init__(self):
-        if self.max_nu_dt <= 0.0:
-            raise ValueError("collisions.small_angle.max_nu_dt must be positive")
+        if self.n_sa < 1:
+            raise ValueError("collisions.small_angle.n_sa must be positive")
+        if self.p_min <= 0.0:
+            raise ValueError("collisions.small_angle.p_min must be positive")
         if self.large_angle_gamma_min < 1.0:
             raise ValueError("collisions.small_angle.large_angle_gamma_min must be >= 1")
+        if self.gamma_floor < 1.0:
+            raise ValueError("collisions.small_angle.gamma_floor must be >= 1")
         if self.impurity_fraction < 0.0:
             raise ValueError("collisions.small_angle.impurity_fraction must be nonnegative")
         if self.impurity_nuclear_charge <= 0.0 or self.impurity_charge_state <= 0.0:
@@ -240,7 +248,8 @@ class SmallAngleSettings:
             self.pitch_scattering,
             self.friction,
             self.energy_scattering,
-            self.max_nu_dt,
+            self.n_sa,
+            self.p_min,
             self.partial_screening,
             self.impurity_fraction,
             self.impurity_nuclear_charge,
@@ -252,6 +261,7 @@ class SmallAngleSettings:
             large_angle_reduced_coulog=self.large_angle_reduced_coulog,
             large_angle_source_coulog=self.large_angle_source_coulog,
             large_angle_gamma_min=self.large_angle_gamma_min,
+            gamma_floor=self.gamma_floor,
         )
 
 
@@ -290,6 +300,27 @@ class CollisionConfig:
     small_angle: SmallAngleSettings = field(default_factory=SmallAngleSettings)
     large_angle: LargeAngleSettings = field(default_factory=LargeAngleSettings)
 
+    def __post_init__(self):
+        # The reduced/source Coulomb-log branches represent the FP remainder
+        # below the same Møller cutoff used by the large-angle operator. Keep
+        # legacy configurations that do not enable those branches permissive,
+        # but reject an active split with two different energy cutoffs.
+        split_enabled = (
+            self.small_angle.large_angle_reduced_coulog
+            or self.small_angle.large_angle_source_coulog
+        )
+        if split_enabled and not isclose(
+            self.small_angle.large_angle_gamma_min,
+            self.large_angle.gamma_min,
+            rel_tol=0.0,
+            abs_tol=1.0e-14,
+        ):
+            raise ValueError(
+                "collisions.small_angle.large_angle_gamma_min must match "
+                "collisions.large_angle.gamma_min when a large-angle Coulomb "
+                "log branch is enabled"
+            )
+
 
 @dataclass(frozen=True)
 class PopulationConfig:
@@ -305,6 +336,46 @@ class PopulationConfig:
             raise ValueError("population.thinning must be 'stratified'")
         if self.thinning_frequency < 1:
             raise ValueError("population.thinning_frequency must be positive")
+
+
+@dataclass(frozen=True)
+class ThermalSourceSettings:
+    """Settings for optional Maxwellian reservoir re-entry."""
+
+    enabled: bool = False
+    p_min: float = 1.0e-3
+
+    def __post_init__(self):
+        _positive(self.p_min, "sources.thermal.p_min")
+
+    def to_runtime(self) -> ThermalSourceConfig:
+        return ThermalSourceConfig(self.enabled, self.p_min)
+
+
+@dataclass(frozen=True)
+class SourceConfig:
+    thermal: ThermalSourceSettings = field(default_factory=ThermalSourceSettings)
+
+
+@dataclass(frozen=True)
+class MomentumBoundarySettings:
+    """Optional absorbing bounds in normalized momentum."""
+
+    low_absorbing: bool = False
+    high_absorbing: bool = False
+    p_min: float = 1.0e-3
+    p_max: float = 8.0
+
+    def __post_init__(self):
+        _positive(self.p_min, "boundaries.momentum.p_min")
+        _positive(self.p_max, "boundaries.momentum.p_max")
+        if self.p_max <= self.p_min:
+            raise ValueError("boundaries.momentum.p_max must exceed p_min")
+
+
+@dataclass(frozen=True)
+class BoundaryConfig:
+    momentum: MomentumBoundarySettings = field(default_factory=MomentumBoundarySettings)
 
 
 @dataclass(frozen=True)
@@ -353,12 +424,18 @@ class BenchmarkConfig:
     reference: str | None = None
     description: str = ""
     replicas: int = 1
+    total_time: float = 1.0e-3
+    burn_time: float = 2.0e-4
 
     def __post_init__(self):
         if not self.name:
             raise ValueError("benchmark.name must not be empty")
         if self.replicas < 1:
             raise ValueError("benchmark.replicas must be positive")
+        if self.total_time <= 0.0:
+            raise ValueError("benchmark.total_time must be positive")
+        if not 0.0 <= self.burn_time < self.total_time:
+            raise ValueError("benchmark.burn_time must lie in [0, total_time)")
 
 
 @dataclass(frozen=True)
@@ -372,6 +449,8 @@ class JontaConfig:
     timesteps: TimestepConfig
     collisions: CollisionConfig
     population: PopulationConfig
+    sources: SourceConfig
+    boundaries: BoundaryConfig
     diagnostics: DiagnosticsConfig
     benchmark: BenchmarkConfig
     reference: ReferenceConfig
@@ -403,6 +482,10 @@ class JontaConfig:
     def moller_config(self) -> MollerConfig:
         return self.collisions.large_angle.to_runtime(self.background)
 
+    @property
+    def thermal_source_config(self) -> ThermalSourceConfig:
+        return self.sources.thermal.to_runtime()
+
     def apply_precision(self):
         """Apply process-static precision before JAX array/JIT creation."""
 
@@ -424,6 +507,8 @@ _TOP_KEYS = {
     "timesteps",
     "collisions",
     "population",
+    "sources",
+    "boundaries",
     "diagnostics",
     "benchmark",
     "reference",
@@ -460,6 +545,14 @@ def config_from_mapping(mapping: Mapping[str, Any], *, source_path: str | Path |
         _construct(LargeAngleSettings, collision_data.get("large_angle", {}), "collisions.large_angle"),
     )
     population = _construct(PopulationConfig, data.get("population", {}), "population")
+    source_data = _strict_mapping(data.get("sources", {}), {"thermal"}, "sources")
+    sources = SourceConfig(
+        _construct(ThermalSourceSettings, source_data.get("thermal", {}), "sources.thermal")
+    )
+    boundary_data = _strict_mapping(data.get("boundaries", {}), {"momentum"}, "boundaries")
+    boundaries = BoundaryConfig(
+        _construct(MomentumBoundarySettings, boundary_data.get("momentum", {}), "boundaries.momentum")
+    )
     diagnostics = _construct(DiagnosticsConfig, data.get("diagnostics", {}), "diagnostics")
     benchmark_data = _strict_mapping(data.get("benchmark", {}), {item.name for item in fields(BenchmarkConfig)}, "benchmark")
     if "name" not in benchmark_data:
@@ -502,6 +595,8 @@ def config_from_mapping(mapping: Mapping[str, Any], *, source_path: str | Path |
         timesteps,
         collisions,
         population,
+        sources,
+        boundaries,
         diagnostics,
         benchmark,
         reference,

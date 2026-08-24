@@ -3,9 +3,12 @@ import jax.numpy as jnp
 
 from collisions.moller import (
     gain_loss_candidates,
+    moller_cutoff_angle,
+    moller_cutoff_gamma,
     moller_dsigma_dgamma,
     moller_outgoing_pair,
     moller_tail_cross_section,
+    moller_tail_cross_section_angle,
     source_only_candidates,
 )
 from core.config import MollerConfig
@@ -20,6 +23,44 @@ def _background():
 
 def test_moller_cross_section_positive():
     assert float(moller_tail_cross_section(jnp.array(5.0), jnp.array(1.1))) > 0.0
+
+
+def test_moller_energy_and_angle_cutoffs_are_inverse():
+    """The configured energy threshold has one explicit cold-target angle."""
+
+    gamma0 = jnp.array([3.0, 5.0, 12.0])
+    gamma_cut = jnp.array([1.02, 1.1, 2.5])
+    chi_c = moller_cutoff_angle(gamma0, gamma_cut)
+    recovered = moller_cutoff_gamma(gamma0, chi_c)
+    assert jnp.allclose(recovered, gamma_cut, rtol=2e-13, atol=2e-13)
+    assert jnp.all((chi_c >= 0.0) & (chi_c <= 0.5 * jnp.pi))
+
+
+def test_moller_angle_cutoff_uses_same_integrated_kernel():
+    gamma0 = jnp.array([3.0, 5.0, 12.0])
+    gamma_cut = jnp.array([1.02, 1.1, 2.5])
+    chi_c = moller_cutoff_angle(gamma0, gamma_cut)
+    assert jnp.allclose(
+        moller_tail_cross_section_angle(gamma0, chi_c),
+        moller_tail_cross_section(gamma0, gamma_cut),
+        rtol=2e-13,
+        atol=2e-13,
+    )
+
+
+def test_moller_cutoff_mapping_rejects_ineligible_values():
+    assert jnp.isnan(moller_cutoff_angle(jnp.array(2.0), jnp.array(1.6)))
+    assert jnp.isnan(moller_cutoff_gamma(jnp.array(5.0), jnp.array(jnp.pi)))
+
+
+def test_moller_cutoff_mapping_is_jittable():
+    @jax.jit
+    def round_trip(gamma0, gamma_cut):
+        return moller_cutoff_gamma(gamma0, moller_cutoff_angle(gamma0, gamma_cut))
+
+    gamma0 = jnp.array([3.0, 5.0, 12.0])
+    gamma_cut = jnp.array([1.02, 1.1, 2.5])
+    assert jnp.allclose(round_trip(gamma0, gamma_cut), gamma_cut, rtol=2e-13, atol=2e-13)
 
 
 def test_outgoing_pair_conserves_kinetic_energy_and_parallel_momentum():
@@ -37,7 +78,8 @@ def test_gain_loss_candidates_conserve_energy_and_have_expected_weight_gain():
     p = particles_from_arrays([5.0, 8.0], [-0.8, -0.9], [0.1, 0.2], [0.0, 0.0], [0.0, 0.0], [2.0, 3.0])
     cfg = MollerConfig(1e14, 15.0, 1.1, max_collision_fraction=0.25)
     cand, q_raw = gain_loss_candidates(p, _background(), 0.01, jax.random.key(2), 0, cfg)
-    q = jnp.clip(q_raw, 0.0, cfg.max_collision_fraction)
+    assert jnp.all((q_raw >= 0.0) & (q_raw <= cfg.max_collision_fraction))
+    q = q_raw
     expected_weight = jnp.sum(p.weight) + jnp.sum(p.weight * q)
     assert jnp.allclose(jnp.sum(cand.weight), expected_weight, rtol=1e-13)
     e0 = jnp.sum(p.weight * (p.kin.gamma - 1.0))
@@ -85,7 +127,8 @@ def test_source_only_candidates_leave_primary_and_add_expected_secondary_weight(
     )
     cfg = MollerConfig(1e14, 15.0, 1.1, max_collision_fraction=0.25)
     cand, q_raw = source_only_candidates(p, _background(), 0.01, jax.random.key(9), 0, cfg)
-    q = jnp.clip(q_raw, 0.0, cfg.max_collision_fraction)
+    assert jnp.all((q_raw >= 0.0) & (q_raw <= cfg.max_collision_fraction))
+    q = q_raw
     n = p.weight.size
     assert jnp.allclose(cand.kin.gamma[:n], p.kin.gamma)
     assert jnp.allclose(cand.kin.xi[:n], p.kin.xi)

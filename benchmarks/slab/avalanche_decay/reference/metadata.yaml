@@ -1,5 +1,5 @@
 benchmark: slab.avalanche_decay
-status: digitized_reference_available
+status: reference_data_available
 sources:
   - key: mcdevitt_2019_avalanche
     citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 61, 054008 (2019)"
@@ -7,19 +7,19 @@ sources:
     source_url: https://doi.org/10.1088/1361-6587/ab0d6d
     figures: [13, 14, B3, B4]
     comparison_targets: [avalanche_growth_rate, avalanche_threshold, cutoff_invariance]
-  - key: mcdevitt_2018_topology
-    citation: "C. J. McDevitt, Z. Guo, and X.-Z. Tang, PPCF 60, 024004 (2018)"
-    source_document: external_reference
-    source_url: https://doi.org/10.1088/1361-6587/aa9b3f
-    comparison_targets: [slab_avalanche_threshold, momentum_space_topology]
-  - key: ramc
-    citation: "RAMc documentation, Sec. III.E / Fig. 15"
-    source_document: RAMc-doc.pdf
-    source_url: null
+internal_provenance:
+  - description: >-
+      The legacy RAMc implementation is retained as an internal model
+      cross-check only. It is not a published source and is not an external
+      comparison target for this benchmark.
+    internal_source_document: RAMc-doc.pdf
 reference_data:
   - file: mcdevitt_2019_figB3_B13.csv
-    provenance: manual digitization of Appendix Fig. B3(a) and Fig. 13
-    uncertainty: plot-digitization uncertainty
+    provenance: manual digitization of Fig. B3(a) and Fig. 13
+    uncertainty: >-
+      Approximate marker-center digitization uncertainty; about 0.01 in E/Ec
+      and 0.001 in gamma_av*tau_c for the rasterized source figure. Values are
+      comparison data, not exact machine-readable source values.
   - file: mcdevitt_2019_figB4.csv
     provenance: manual digitization of Appendix Fig. B4(a,b)
     uncertainty: plot-digitization uncertainty

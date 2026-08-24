@@ -56,3 +56,33 @@ def fit_exponential_growth(time, total_weight, fit_start_fraction: float = 0.35)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 0.0 else 1.0
     return float(slope), float(intercept), float(r2)
+
+
+def fit_window_sensitivity(
+    time,
+    total_weight,
+    fit_start_fraction: float = 0.35,
+    offsets=(-0.20, -0.10, 0.0, 0.10, 0.20),
+):
+    """Estimate growth-rate sensitivity to the selected fit window.
+
+    Returns the sample standard deviation of valid slopes from nearby fit
+    windows. This is a systematic fit-choice component, not an independent
+    replica SEM, and therefore must not be divided by ``sqrt(N)``.
+    """
+
+    fractions = sorted(
+        {
+            float(np.clip(fit_start_fraction + offset, 0.0, 0.9))
+            for offset in offsets
+        }
+    )
+    slopes = []
+    for fraction in fractions:
+        try:
+            slopes.append(fit_exponential_growth(time, total_weight, fraction)[0])
+        except ValueError:
+            continue
+    if len(slopes) < 2:
+        return float("nan")
+    return float(np.std(np.asarray(slopes), ddof=1))

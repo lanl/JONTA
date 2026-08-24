@@ -103,6 +103,12 @@ devices are logical XLA CPU devices, not physical-core measurements.
 
 ## Published McDevitt figures
 
+The accepted source-limit B3(a) scan has its own reproducible driver and
+documentation at
+[`benchmarks/slab/avalanche_decay/`](../benchmarks/slab/avalanche_decay/).
+Use that driver for the slab growth-rate benchmark; the multi-figure command
+below is reserved for the remaining paper figures.
+
 Paper-scale figure reproduction is exposed one figure per process and is
 intended for a supported GPU:
 

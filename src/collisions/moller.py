@@ -42,6 +42,65 @@ def moller_dsigma_dgamma(gamma0, gamma_secondary):
     )
 
 
+def moller_cutoff_angle(gamma0, gamma_cut):
+    r"""Return the cold-target Møller angle corresponding to ``gamma_cut``.
+
+    ``gamma_cut`` is the minimum total Lorentz factor of either outgoing
+    electron in the energy-transfer convention used by
+    :func:`moller_tail_cross_section`.  The equivalent angle is the angle of
+    the secondary electron relative to the incoming momentum.  For an
+    eligible event, cold-target kinematics gives
+
+    .. math::
+
+       \cos^2\chi_c =
+       \frac{(\gamma_0+1)(\gamma_c-1)}
+            {(\gamma_0-1)(\gamma_c+1)}.
+
+    The mapping is defined for ``gamma0 > 1`` and
+    ``1 <= gamma_cut <= (gamma0 + 1)/2``.  Ineligible cutoffs return NaN;
+    this prevents an energy threshold with no possible Møller event from
+    being silently interpreted as an angle.
+    """
+
+    g0 = jnp.asarray(gamma0)
+    gc = jnp.asarray(gamma_cut)
+    valid = (g0 > 1.0) & (gc >= 1.0) & (gc <= 0.5 * (g0 + 1.0))
+    cos_sq = ((g0 + 1.0) * (gc - 1.0)) / jnp.maximum(
+        (g0 - 1.0) * (gc + 1.0), 1.0e-30
+    )
+    angle = jnp.arccos(jnp.sqrt(jnp.clip(cos_sq, 0.0, 1.0)))
+    return jnp.where(valid, angle, jnp.nan)
+
+
+def moller_cutoff_gamma(gamma0, chi_c):
+    r"""Return the energy cutoff equivalent to a cold-target angle ``chi_c``.
+
+    This is the inverse of :func:`moller_cutoff_angle` for
+    ``0 <= chi_c <= pi/2``.  The angle is the secondary-electron angle used by
+    the cold-target Møller kernel, not an independently adjustable second
+    cutoff.  Values outside that kinematic interval return NaN.
+    """
+
+    g0 = jnp.asarray(gamma0)
+    chi = jnp.asarray(chi_c)
+    valid = (g0 > 1.0) & (chi >= 0.0) & (chi <= 0.5 * PI)
+    ratio = jnp.cos(chi) ** 2 * (g0 - 1.0) / jnp.maximum(g0 + 1.0, 1.0e-30)
+    gamma_cut = (1.0 + ratio) / jnp.maximum(1.0 - ratio, 1.0e-30)
+    return jnp.where(valid, gamma_cut, jnp.nan)
+
+
+def moller_tail_cross_section_angle(gamma0, chi_c):
+    """Evaluate the Møller tail cross section using an angular cutoff.
+
+    Runtime configuration remains backward-compatible with ``gamma_min``;
+    this helper makes the equivalent physical ``chi_c`` interface explicit
+    and guarantees both conventions use the same integrated kernel.
+    """
+
+    return moller_tail_cross_section(gamma0, moller_cutoff_gamma(gamma0, chi_c))
+
+
 def moller_tail_cross_section(gamma0, gamma_cut):
     """Integrated dimensionless cross section from gamma_cut to (g0+1)/2.
 
@@ -159,7 +218,14 @@ def gain_loss_candidates(
     """Construct the fixed-shape 3N weighted gain-loss candidate ensemble."""
 
     q_raw = collision_fraction(particles, background, dt_large_angle, config)
-    q = jnp.clip(q_raw, 0.0, config.max_collision_fraction)
+    # The collision interval must be reduced when q exceeds the configured
+    # fraction.  Clipping q changes the Boltzmann operator and hides an
+    # under-resolved large-angle cadence.
+    q = jnp.where(
+        q_raw <= config.max_collision_fraction,
+        q_raw,
+        jnp.nan,
+    )
 
     u_g = uniform_by_particle(base_key, particles.pid, global_step, stream=21)
     u_a = uniform_by_particle(base_key, particles.pid, global_step, stream=22)
@@ -221,7 +287,11 @@ def source_only_candidates(
     """
 
     q_raw = collision_fraction(particles, background, dt_large_angle, config)
-    q = jnp.clip(q_raw, 0.0, config.max_collision_fraction)
+    q = jnp.where(
+        q_raw <= config.max_collision_fraction,
+        q_raw,
+        jnp.nan,
+    )
 
     u_g = uniform_by_particle(base_key, particles.pid, global_step, stream=31)
     u_a = uniform_by_particle(base_key, particles.pid, global_step, stream=32)

@@ -1,66 +1,75 @@
-# McDevitt et al. 2019 Appendix B3 slab avalanche growth-rate case.
-# Run with the benchmark driver after selecting the desired resolution.
+# McDevitt et al. 2019 Appendix B3(a) slab avalanche growth-rate case.
 model:
   geometry: slab
   precision: float64
 execution:
-  mode: serial
+  mode: parallel
   platform: cpu
+  n_devices: 6
 geometry:
   n_radial: 2
   minor_radius_cm: 100.0
   epsilon: 0.0
   c_tau_over_a: 1.0
   a_omega_ce_over_c: 1.0
+  alpha_syn: 0.5
 field:
-  e_over_ec: 3.2321
+  e_scan: [2.63361, 2.73198, 2.83239, 2.93134]
 background:
   ne_cm3: 1.0e14
-  te_ev: 1.0e3
-  ti_ev: 1.0e3
-  zeff: 1.0
-  coulomb_log: 15.0
+  te_ev: 2555.999
+  ti_ev: 2555.999
+  zeff: 2.0
+  coulomb_log: 20.0
 particles:
-  markers: 4096
+  markers: 512
   total_weight: 1.0
   seed: 3
   gamma_range: [10.0, 20.0]
   xi_range: [-1.0, -0.8]
   radius_range: [0.0, 0.0]
 timesteps:
-  dt_particle: 1.0e-3
-  large_angle_every: 0
+  dt_particle: 0.0025
+  large_angle_every: 20
   coupling_every: 1
   diagnostics_every: 1
 collisions:
   small_angle:
     pitch_scattering: true
     friction: true
-    energy_scattering: true
-    max_nu_dt: 0.5
+    # B3(a) source-limit setup follows the published hot-particle model;
+    # energy diffusion is disabled for this specific comparison.
+    energy_scattering: false
+    n_sa: 100
+    p_min: 0.3
   large_angle:
-    enabled: false
+    enabled: true
+    gamma_min: 1.02
+    max_collision_fraction: 0.20
+    conservative: false
 population:
-  capacity: 4096
+  capacity: 512
   thinning: stratified
   overflow_only: true
   thinning_frequency: 1
 diagnostics:
   fit_start_fraction: 0.35
   bins: 320
-  sample_every: 1
+  sample_every: 40
 benchmark:
-  name: mcdevitt-2019-b3-slab
-  reference: reference/mcdevitt_2019_figB4.csv
-  description: Uniform slab avalanche growth rate at E/Ec = 3.2321.
-  replicas: 8
+  name: mcdevitt-2019-b3a-slab
+  reference: reference/mcdevitt_2019_figB3_B13.csv
+  description: Uniform slab avalanche growth-rate curve from McDevitt 2019 Appendix Fig. B3(a).
+  replicas: 6
+  total_time: 300.0
+  burn_time: 105.0
 reference:
-  data_file: reference/mcdevitt_2019_figB4.csv
+  data_file: reference/mcdevitt_2019_figB3_B13.csv
   comparison: growth_rate
   growth_rate_sem: 0.0
   r2_min: 0.95
 output:
-  directory: ../../../benchmark_results/mcdevitt_b3
+  directory: ../../../benchmark_results/slab/avalanche_decay/b3a_512
   formats: [json, csv, png]
   save_histories: true
   save_final_state: false

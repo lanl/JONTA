@@ -59,7 +59,8 @@ class SmallAngleConfig(NamedTuple):
     pitch_scattering: bool = True
     friction: bool = True
     energy_scattering: bool = True
-    max_nu_dt: float = 0.5
+    n_sa: int = 100
+    p_min: float = 1.0e-3
     partial_screening: bool = False
     impurity_fraction: float = 0.0
     impurity_nuclear_charge: float = 1.0
@@ -74,6 +75,7 @@ class SmallAngleConfig(NamedTuple):
     large_angle_reduced_coulog: bool = False
     large_angle_source_coulog: bool = False
     large_angle_gamma_min: float = 1.02
+    gamma_floor: float = 1.0
 
 
 class MollerConfig(NamedTuple):
@@ -92,3 +94,10 @@ class CadenceConfig(NamedTuple):
     large_angle_every: int
     coupling_every: int
     diagnostics_every: int = 1
+
+
+class ThermalSourceConfig(NamedTuple):
+    """Optional fixed-capacity Maxwellian reservoir."""
+
+    enabled: bool = False
+    p_min: float = 1.0e-3

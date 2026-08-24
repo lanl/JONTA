@@ -7,13 +7,14 @@ from collisions.small_angle import (
     pitch_scattering_frequency,
     reduced_large_angle_coulomb_log,
     relativistic_coulomb_logs,
+    required_small_angle_substeps,
     small_angle_step,
     source_only_large_angle_coulomb_log,
 )
-from core.math import momentum_from_gamma
-from core.constants import ME_C2_EV
 from core.config import SmallAngleConfig
+from core.constants import ME_C2_EV
 from core.initialization import particles_from_arrays
+from core.math import momentum_from_gamma
 from core.state import BackgroundProfiles
 
 
@@ -44,6 +45,23 @@ def test_small_angle_stays_in_physical_domain():
     assert bool(jnp.all(out.kin.gamma >= 1.0))
     assert bool(jnp.all(jnp.abs(out.kin.xi) <= 1.0))
     assert bool(jnp.all(jnp.isfinite(out.kin.gamma)))
+
+
+def test_collision_resolution_uses_configured_lower_momentum():
+    background = _background()
+    cfg = SmallAngleConfig(1.0e14, 15.0, n_sa=100, p_min=1.0e-3)
+    gamma = jnp.asarray([1.0], dtype=jnp.float64)
+    nu = pitch_scattering_frequency(
+        gamma,
+        jnp.ones_like(gamma),
+        jnp.ones_like(gamma),
+        jnp.asarray([1.0e3]),
+        jnp.asarray([15.0]),
+        cfg,
+    )
+    assert bool(jnp.all(jnp.isfinite(nu)))
+    substeps = required_small_angle_substeps(1.0e-4, background, cfg)
+    assert substeps >= 1
 
 
 def test_partial_screening_enhances_relativistic_pitch_scattering():
@@ -164,4 +182,3 @@ def test_partial_screening_friction_matches_supplied_ramc_formula():
     bound = 17.0 * (1.0 / 2.0) * (0.2 * jnp.log(1.0 + h_i**5) - v * v)
     expected = 2.0 / vte**2 * psi * (logee / coulog) * (1.0 + bound / logee)
     assert jnp.allclose(got, expected, rtol=2e-11, atol=2e-11)
-

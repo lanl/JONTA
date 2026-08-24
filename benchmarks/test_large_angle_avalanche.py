@@ -33,6 +33,7 @@ from boundaries.basic import gamma_absorbing_boundary
 from collisions.moller import apply_moller_gain_loss, apply_moller_source_only
 from collisions.small_angle import (
     reduced_large_angle_coulomb_log,
+    required_small_angle_substeps,
     small_angle_step,
     source_only_large_angle_coulomb_log,
 )
@@ -44,7 +45,11 @@ from core.initialization import (
     rosenbluth_legendre_markers,
 )
 from core.state import BackgroundProfiles, ParticleState
-from diagnostics.avalanche import fit_exponential_growth, replicate_mean_sem
+from diagnostics.avalanche import (
+    fit_exponential_growth,
+    fit_window_sensitivity,
+    replicate_mean_sem,
+)
 from fields.uniform import UniformField
 from integrators.explicit import rk4_step
 from orbits.zero_d import zero_d_rhs
@@ -250,6 +255,7 @@ def _build_kernel(
     large_angle_every,
     sample_every,
     conservative,
+    large_angle_enabled=True,
     source_relativistic_log=False,
     reduced_log=False,
     vte_over_c=DEFAULT_VTE,
@@ -263,7 +269,8 @@ def _build_kernel(
     relativistic_coulog=False,
     energy_scattering=False,
     small_angle_substeps=1,
-    max_nu_dt=0.25,
+    p_min=0.3,
+    n_sa=100,
 ):
     bg, ne_cm3, _te_ev = _background(vte_over_c, zeff, coulog0)
     sa_cfg = SmallAngleConfig(
@@ -272,7 +279,8 @@ def _build_kernel(
         pitch_scattering=True,
         friction=True,
         energy_scattering=energy_scattering,
-        max_nu_dt=max_nu_dt,
+        n_sa=n_sa,
+        p_min=p_min,
         partial_screening=partial_screening,
         impurity_fraction=impurity_fraction,
         impurity_nuclear_charge=impurity_nuclear_charge,
@@ -293,10 +301,10 @@ def _build_kernel(
         target_electron_factor=target_electron_factor,
     )
     dt_la = dt * large_angle_every
-    n_sa = int(small_angle_substeps)
-    if n_sa < 1:
+    collision_substeps = int(small_angle_substeps)
+    if collision_substeps < 1:
         raise ValueError("small_angle_substeps must be positive")
-    dt_sa_half = 0.5 * dt / n_sa
+    dt_sa_half = 0.5 * dt / collision_substeps
     n_samples = n_steps // sample_every + 1
 
     @jax.jit
@@ -316,26 +324,28 @@ def _build_kernel(
             # Strang split stochastic small-angle physics around the RK4
             # deterministic electric + synchrotron push.
             def collide_first(j, pp):
-                step_id = (2 * i) * n_sa + j
+                step_id = (2 * i) * collision_substeps + j
                 return small_angle_step(
                     pp, bg, dt_sa_half, base_key, step_id, sa_runtime
                 )
 
-            p = jax.lax.fori_loop(0, n_sa, collide_first, p)
+            p = jax.lax.fori_loop(0, collision_substeps, collide_first, p)
             rhs = lambda kin, t: zero_d_rhs(kin, t, field, alpha_syn=alpha_syn)
             kin = rk4_step(rhs, p.kin, i * dt, dt)
             p = ParticleState(kin, p.weight, p.alive, p.pid)
 
             def collide_second(j, pp):
-                step_id = (2 * i + 1) * n_sa + j
+                step_id = (2 * i + 1) * collision_substeps + j
                 return small_angle_step(
                     pp, bg, dt_sa_half, base_key, step_id, sa_runtime
                 )
 
-            p = jax.lax.fori_loop(0, n_sa, collide_second, p)
+            p = jax.lax.fori_loop(0, collision_substeps, collide_second, p)
             p = gamma_absorbing_boundary(p, gamma_min)
 
             def do_large_angle(pp):
+                if not large_angle_enabled:
+                    return pp, jnp.asarray(0.0, dtype=jnp.float64)
                 if conservative:
                     return apply_moller_gain_loss(
                         pp, bg, dt_la, base_key, i, la_runtime
@@ -384,6 +394,7 @@ def run_growth_replicates(
     coulog0,
     gamma_min=1.02,
     conservative=False,
+    large_angle_enabled=True,
     source_relativistic_log=False,
     reduced_log=False,
     n_markers=1024,
@@ -410,19 +421,39 @@ def run_growth_replicates(
     rosenbluth_lmax=24,
     rosenbluth_energy_extent=1.7,
     rosenbluth_seed_floor_fraction=0.15,
-    small_angle_substeps=1,
-    max_nu_dt=0.25,
+    small_angle_substeps=None,
+    p_min=None,
+    n_sa=100,
     return_final=False,
+    execution_mode="serial",
+    n_devices=1,
 ):
     large_angle_every = max(1, int(round(large_angle_dt / dt)))
     sample_every = max(1, int(round(sample_dt / dt)))
     n_steps = int(round(total_time / dt))
+    if p_min is None:
+        p_min = 3.0 * vte_over_c
+    bg, ne_cm3, _te_ev = _background(vte_over_c, zeff, coulog0)
+    if small_angle_substeps is None:
+        sa_cfg = SmallAngleConfig(
+            ne0_cm3=ne_cm3,
+            coulog0=coulog0,
+            n_sa=n_sa,
+            p_min=p_min,
+            gamma_floor=1.0,
+        )
+        small_angle_substeps = required_small_angle_substeps(
+            0.5 * dt,
+            bg,
+            sa_cfg,
+        )
     kernel = _build_kernel(
         zeff=zeff,
         coulog0=coulog0,
         dt=dt,
         n_steps=n_steps,
         large_angle_every=large_angle_every,
+        large_angle_enabled=large_angle_enabled,
         sample_every=sample_every,
         conservative=conservative,
         source_relativistic_log=source_relativistic_log,
@@ -438,15 +469,13 @@ def run_growth_replicates(
         relativistic_coulog=relativistic_coulog,
         energy_scattering=energy_scattering,
         small_angle_substeps=small_angle_substeps,
-        max_nu_dt=max_nu_dt,
+        n_sa=n_sa,
+        p_min=p_min,
     )
 
-    results = []
-    histories = []
-    finals = []
-    for seed in seeds:
+    def initialize(seed):
         if initialization == "uniform":
-            p0 = _initialize_seed(
+            return _initialize_seed(
                 n_markers,
                 seed,
                 gamma_range=initial_gamma_range,
@@ -463,7 +492,7 @@ def run_growth_replicates(
                 float(gamma_min),
                 1.0 + float(rosenbluth_seed_floor_fraction) * warm_scale,
             )
-            p0 = rosenbluth_legendre_markers(
+            return rosenbluth_legendre_markers(
                 jax.random.key(seed + 17011),
                 n_markers,
                 e_over_ec=float(e_over_ec),
@@ -483,33 +512,109 @@ def run_growth_replicates(
             raise ValueError(
                 "initialization must be 'uniform' or 'rosenbluth_legendre'"
             )
-        _pf, time, weight, idx, max_q = kernel(
-            p0,
-            jax.random.key(seed + 88001),
+    p0s = [initialize(seed) for seed in seeds]
+    if execution_mode == "parallel":
+        devices = tuple(jax.devices("cpu"))
+        if n_devices < 2 or n_devices > len(devices):
+            raise RuntimeError(
+                f"requested {n_devices} CPU devices, available={len(devices)}"
+            )
+        if len(p0s) != n_devices:
+            raise ValueError("parallel replica execution requires replicas == n_devices")
+        stacked = jax.tree_util.tree_map(
+            lambda *values: jnp.stack(values), *p0s
+        )
+        keys = jnp.stack([jax.random.key(seed + 88001) for seed in seeds])
+        mapped = jax.pmap(
+            kernel,
+            in_axes=(0, 0, None, None, None),
+            devices=devices[:n_devices],
+        )
+        outputs = mapped(
+            stacked,
+            keys,
             jnp.asarray(e_over_ec),
             jnp.asarray(gamma_min),
             jnp.asarray(alpha),
         )
+        final_batch, times_batch, weights_batch, idx_batch, max_q_batch = outputs
+        idx_values = np.asarray(idx_batch)
+        if return_final:
+            finals_batch = [
+                jax.tree_util.tree_map(
+                    lambda values, index=index: values[index], final_batch
+                )
+                for index in range(n_devices)
+            ]
+        else:
+            # Keep final particle states device-resident and avoid a large
+            # host transfer for diagnostics-only benchmark runs.
+            finals_batch = [None] * n_devices
+        result_iter = zip(
+            seeds,
+            finals_batch,
+            np.asarray(times_batch),
+            np.asarray(weights_batch),
+            idx_values,
+            np.asarray(max_q_batch),
+        )
+    elif execution_mode == "serial":
+        result_iter = []
+        for seed, p0 in zip(seeds, p0s):
+            result_iter.append(
+                (seed, *kernel(
+                    p0,
+                    jax.random.key(seed + 88001),
+                    jnp.asarray(e_over_ec),
+                    jnp.asarray(gamma_min),
+                    jnp.asarray(alpha),
+                ),)
+            )
+    else:
+        raise ValueError("execution_mode must be 'serial' or 'parallel'")
+
+    results = []
+    histories = []
+    finals = []
+    for seed, final, time, weight, idx, max_q in result_iter:
         idx = int(idx)
         t = np.asarray(time[:idx])
         w = np.asarray(weight[:idx])
-        growth, intercept, r2 = fit_exponential_growth(t, w, fit_start_fraction)
-        results.append((growth, r2, float(max_q)))
-        histories.append((seed, t, w, growth, intercept, r2))
+        try:
+            growth, intercept, r2 = fit_exponential_growth(t, w, fit_start_fraction)
+            fit_window_std = fit_window_sensitivity(t, w, fit_start_fraction)
+        except ValueError:
+            # A finite-capacity realization can become extinct before the fit
+            # window. Preserve its history and mark its growth fit undefined.
+            growth = intercept = r2 = float("nan")
+            fit_window_std = float("nan")
+        results.append((growth, r2, float(max_q), fit_window_std))
+        histories.append((seed, t, w, growth, intercept, r2, fit_window_std))
         if return_final:
-            finals.append(jax.device_get(_pf))
+            finals.append(final)
 
     arr = np.asarray(results)
-    if len(seeds) > 1:
-        growth_mean, growth_std, growth_sem = replicate_mean_sem(arr[:, 0])
+    finite_growth = np.isfinite(arr[:, 0])
+    if len(seeds) > 1 and np.count_nonzero(finite_growth) >= 2:
+        growth_mean, growth_std, growth_sem = replicate_mean_sem(arr[finite_growth, 0])
     else:
-        growth_mean, growth_std, growth_sem = float(arr[0, 0]), 0.0, 0.0
+        growth_mean = growth_std = growth_sem = float("nan")
+    finite_r2 = np.isfinite(arr[:, 1])
+    finite_window = np.isfinite(arr[:, 3])
     return {
         "growth": growth_mean,
         "std": growth_std,
         "sem": growth_sem,
-        "r2_mean": float(np.mean(arr[:, 1])),
+        "r2_mean": float(np.mean(arr[finite_r2, 1])) if np.any(finite_r2) else float("nan"),
+        "fit_window_std": (
+            float(np.sqrt(np.mean(arr[finite_window, 3] ** 2)))
+            if np.any(finite_window)
+            else float("nan")
+        ),
         "max_q": float(np.max(arr[:, 2])),
+        "small_angle_substeps": int(small_angle_substeps),
+        "small_angle_n_sa": int(n_sa),
+        "small_angle_p_min": float(p_min),
         "replicates": arr[:, 0],
         "histories": histories,
         "finals": finals,
@@ -616,7 +721,7 @@ def estimate_b4_threshold(
         impurity_radius_abohr=a_i,
         impurity_mean_excitation_ev=i_i,
         target_electron_factor=target_factor,
-        max_nu_dt=0.5,
+        n_sa=100,
     )
     common.update(growth_kwargs)
 
