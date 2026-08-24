@@ -26,11 +26,10 @@
     "fit_start_fraction": 0.6,
     "gamma_min_la": 1.02,
     "inv_alpha": [
-      1.0,
       2.0,
       2.5,
-      4.0,
-      8.0,
+      3.3333333333333335,
+      5.0,
       10.0,
       20.0,
       40.0,
@@ -47,7 +46,7 @@
   },
   "reference": "McDevitt et al. 2019 PPCF 61 054008, Fig. B3(b)",
   "runtime": {
-    "git_commit": "f1ffb635cfb037021201b715db18540b6feb986f",
+    "git_commit": "b63a47a3c627c21089d983feadcaf96547e3ec85",
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "python": "3.12.10"
   },

@@ -9,9 +9,10 @@ sources:
     comparison_targets: [avalanche_threshold, threshold_fit]
 reference_data:
   - file: mcdevitt_2019_figB3b.csv
-    provenance: manual digitization of the open-circle Monte Carlo markers in Fig. B3(b)
+    provenance: pixel-center digitization of the open-circle Monte Carlo markers in Fig. B3(b)
     uncertainty: >-
-      Approximate raster digitization uncertainty of about 0.03 in E_av/E_c;
+      Marker centers were mapped from the 800 dpi raster using the plotted
+      linear axes. Residual reading uncertainty is about 0.01 in E_av/E_c;
       values are comparison data, not exact machine-readable source values.
 analytic_reference:
   equation: "E_av/E_c = 1 + 1.0906 [alpha^0.6 (Z_eff + 1)]^0.6801"

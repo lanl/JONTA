@@ -28,7 +28,11 @@
       2.63361,
       2.73198,
       2.83239,
-      2.93134
+      2.93134,
+      3.03838,
+      3.2321,
+      3.73272,
+      4.23173
     ],
     "fit_start_fraction": 0.35,
     "gamma_min": 1.02,
@@ -45,13 +49,13 @@
   },
   "reference": "McDevitt et al. 2019 PPCF 61 054008, Fig. B3(a)",
   "resolution": {
-    "max_event_probability": 0.07656625083509609,
+    "max_event_probability": 0.07656625083513606,
     "small_angle_n_sa": 100,
     "small_angle_p_min": 0.3,
     "small_angle_substeps": 15
   },
   "runtime": {
-    "git_commit": "d06408e",
+    "git_commit": "b63a47a3c627c21089d983feadcaf96547e3ec85",
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "python": "3.12.10"
   },

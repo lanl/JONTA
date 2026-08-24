@@ -34,6 +34,11 @@ def _args():
     parser.add_argument("--mode", choices=("serial", "parallel"), default=None)
     parser.add_argument("--devices", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="drop checkpoint rows outside the requested Zeff and 1/alpha grid",
+    )
     return parser.parse_args()
 
 
@@ -205,7 +210,7 @@ def _write_threshold_plot(output, rows, reference):
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(7.0, 4.8))
-    grid = np.geomspace(1.0, 80.0, 400)
+    grid = np.geomspace(min(row["inv_alpha"] for row in reference), 80.0, 400)
     for zeff, color, marker in ((1.0, "tab:blue", "o"), (5.0, "tab:red", "s")):
         curve = [float(mcdevitt_threshold_fit(1.0 / x, zeff)) for x in grid]
         ax.plot(grid, curve, color=color, label=fr"Eq. (B15), $Z_{{\rm eff}}={int(zeff)}$")
@@ -321,6 +326,20 @@ def main():
     rows = _read_csv(threshold_path) if args.resume else []
     scan_rows = _read_csv(scan_path) if args.resume else []
     history_rows = _read_csv(history_path) if args.resume else []
+    if args.reconcile:
+        valid = {(float(zeff), float(inv_alpha)) for zeff in zeffs for inv_alpha in fields}
+        rows = [
+            row for row in rows
+            if (float(row["Zeff"]), float(row["inv_alpha"])) in valid
+        ]
+        scan_rows = [
+            row for row in scan_rows
+            if (float(row["Zeff"]), float(row["inv_alpha"])) in valid
+        ]
+        history_rows = [
+            row for row in history_rows
+            if (float(row["Zeff"]), float(row["inv_alpha"])) in valid
+        ]
     completed = {(float(row["Zeff"]), float(row["inv_alpha"])) for row in rows}
     for zeff in zeffs:
         for inv_alpha in fields:

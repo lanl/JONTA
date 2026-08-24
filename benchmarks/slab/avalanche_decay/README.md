@@ -34,8 +34,9 @@ PYTHONPATH=src:. JAX_PLATFORMS=cpu MPLBACKEND=Agg \
   --mode parallel --devices 6 --resume
 ```
 
-The configuration performs four below/near-threshold cases with 512 markers per
-device, six independent replicas, and 300 \(\tau_c\) of evolution:
+The configuration performs the complete eight-point field scan with 512 markers
+per device, six independent replicas, and 300 \(\tau_c\) of evolution. It
+includes both the below/near-threshold points and the large-field growth cases:
 
 - \(\Delta t = 2.5\times10^{-3}\,\tau_c\);
 - large-angle interval \(\Delta t_{\rm LA}=5.0\times10^{-2}\,\tau_c\);
@@ -68,27 +69,31 @@ The 512-marker scan gives:
 | 2.73198 | -0.00974 | -0.01866 | +0.00892 | 0.00181 | 0.988 |
 | 2.83239 | +0.00147 | +0.002696 | -0.00122 | 0.00172 | 0.505 |
 | 2.93134 | +0.01090 | +0.01115 | -0.00025 | 0.00106 | 0.991 |
+| 3.03838 | +0.01781 | +0.01776 | +0.00005 | 0.00062 | 0.998 |
+| 3.23210 | +0.02733 | +0.02732 | +0.00001 | 0.00063 | 0.998 |
+| 3.73272 | +0.04487 | +0.04431 | +0.00056 | 0.00167 | 1.000 |
+| 4.23173 | +0.05872 | +0.05741 | +0.00131 | 0.00160 | 1.000 |
 
 ## Figure: growth-rate comparison
 
 ![B3(a) growth-rate comparison](../../../benchmark_results/slab/avalanche_decay/b3a_512/b3a_growth.png)
 
 The growth-rate figure reproduces the expected transition from decay to
-avalanche growth as (E/E_c) increases. The two lowest-field cases have
-negative fitted rates, the (E/E_c=2.83239) case lies in the threshold region,
-and the (E/E_c=2.93134) case has positive growth and agrees closely with the
-digitized McDevitt value. The lower-field decay rates are on the correct branch
-but retain a systematic offset from the paper curve; this is the remaining
-finite-marker/model-resolution component of the comparison. Error bars combine
-replica statistics with fit-window sensitivity.
+avalanche growth as \(E/E_c\) increases. The two lowest-field cases have
+negative fitted rates, the \(E/E_c=2.83239\) point lies in the threshold region,
+and all four newly included high-field cases follow the published
+positive-growth branch. The (E/E_c=3.03838) and 3.23210 points agree with the
+digitized curve to better than (6\times10^{-5}) in
+\(\gamma_{\rm av}\tau_c\); the two highest-field points remain within about
+0.0014. Error bars combine replica statistics with fit-window sensitivity.
 
 ## Figure: marker histories and exponential fits
 
 ![B3(a) marker histories](../../../benchmark_results/slab/avalanche_decay/b3a_512/b3a_histories.png)
 
 This figure shows all six independent weighted-marker histories for each field
-and the corresponding exponential fits. The (E/E_c=2.63361), 2.73198, and
-2.93134 histories remain close to straight lines on the logarithmic axis,
+and the corresponding exponential fits. The low-field and newly added
+high-field histories remain close to straight lines on the logarithmic axis,
 consistent with their high (R^2) values. At (E/E_c=2.83239), the population
 remains close to the separatrix and fluctuations dominate; the low (R^2) is a
 diagnostic that the fitted rate is not a well-conditioned exponential
