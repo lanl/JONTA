@@ -16,11 +16,11 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
+from benchmarks.one_d.invariant_conservation.run import make_case
 from core.state import ParticleState
 from integrators.explicit import rk4_step
 from orbits.ramc_circular import ramc_circular_rhs
 from parallel import merge_particle_partitions, partition_particles
-from tests.validation.test_guiding_center_invariants import make_case
 
 jax.config.update("jax_enable_x64", True)
 
