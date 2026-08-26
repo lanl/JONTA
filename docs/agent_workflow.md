@@ -14,8 +14,8 @@ to navigate and validate a change without relying on conversation history.
 4. Read `docs/physics.md` before changing an equation or model.
 5. Read `docs/numerics.md` before changing an integrator, stochastic operator,
    cadence, resampler, deposition, or coupling algorithm.
-6. Read `docs/validation.md` and the relevant `tests/validation/README.md`
-   section before changing a benchmark.
+6. Read `docs/validation.md` and the relevant benchmark README under
+   `benchmarks/` before changing a physical benchmark.
 7. Read `docs/benchmarks.md` before adding or interpreting checked-in results.
 
 Use the source tree as the implementation map:
@@ -30,7 +30,7 @@ Use the source tree as the implementation map:
 | serial/parallel device execution | `src/parallel/`, `src/simulation.py` | serial reference versus CPU sharding equivalence |
 | plasma/coupling/deposition | `src/plasma/`, `src/coupling/`, `src/deposition/` | manufactured or conservation test plus coupling residual evidence |
 | coding test | `tests/unit/`, `tests/integration/` | deterministic contract or execution-path evidence |
-| numerical/physical validation | `tests/validation/` | convergence, conservation, or statistical evidence |
+| numerical/physical validation | `benchmarks/` | convergence, conservation, or statistical evidence |
 | benchmark driver or figure | `benchmarks/` | exact parameter grid, raw output, plot, and acceptance comparison |
 
 ## Execution modes
@@ -70,8 +70,9 @@ XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   JAX_PLATFORMS=cpu PYTHONPATH=src python -m pytest -q \
   tests/integration/test_simulation.py tests/integration/test_parallel_orbit.py
 
-# explicit numerical/physical validation
-PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q tests/validation
+# explicit physical benchmark (choose the benchmark documented in docs/benchmarks.md)
+PYTHONPATH=src JAX_PLATFORMS=cpu python benchmarks/one_d/invariant_conservation/run.py \
+  --output-dir benchmark_results/one_d/invariant_conservation_cpu
 ```
 
 Coding tests always run at full configured fidelity. Numerical/physical
@@ -79,10 +80,10 @@ validation and paper benchmarks are explicit jobs, never hidden behind a
 selective test filter. GPU-specific changes additionally require a CUDA test when
 such a device is available.
 
-The current reference tree has pre-existing whole-tree Ruff debt in older
-benchmark/test files. Do not mass-reformat unrelated files as part of a physics
-or architecture change; run Ruff on touched paths and track a dedicated lint
-cleanup separately.
+CI lint covers the source and coding-test trees. Benchmark drivers are kept
+outside that gate because they are executable validation programs with
+benchmark-specific dependencies; run Ruff on any touched benchmark driver and
+avoid mass-reformatting unrelated files.
 
 ## Benchmark discipline
 

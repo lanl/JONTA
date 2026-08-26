@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from core.math import momentum_from_gamma
 from core.state import KinematicState
 from fields.uniform import UniformField
+
 from .radiation import synchrotron_low_beta
 
 
@@ -23,8 +24,11 @@ def zero_d_rhs(
         dgamma/dt = -(p/gamma) xi E_parallel
         dxi/dt    = -(1-xi^2) E_parallel / p
 
-    using the RAMc electron sign convention. Synchrotron radiation is part
-    of the same deterministic RHS. Spatial coordinates are unchanged.
+    using the RAMc electron sign convention. The returned ODE derivative
+    combines the Lorentz characteristic with the deterministic synchrotron
+    right-hand-side operator for efficient particle integration; physically,
+    radiation is not part of the Vlasov transport term. Spatial coordinates
+    are unchanged.
     """
 
     del time

@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from core.config import OrbitNormalization
 from core.math import safe_radius
 from core.state import CircularFieldProfiles, KinematicState, QuadraticCircularFieldProfiles
+
 from .profiles import sample_circular_profiles
 
 

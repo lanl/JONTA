@@ -60,7 +60,9 @@ def bilinear_regular_grid(xgrid, ygrid, values, x, y):
 
 
 def sample_axisymmetric_table(table: AxisymmetricFieldTable, R, Z):
-    interp = lambda a: bilinear_regular_grid(table.R, table.Z, a, R, Z)
+    def interp(a):
+        return bilinear_regular_grid(table.R, table.Z, a, R, Z)
+
     return AxisymmetricFieldValues(
         interp(table.B_R),
         interp(table.B_Z),

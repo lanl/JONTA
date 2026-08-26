@@ -19,6 +19,7 @@ jobs:
         python-version: ["3.11", "3.12"]
     env:
       JAX_PLATFORMS: cpu
+      XLA_FLAGS: --xla_force_host_platform_device_count=2
       PYTHONPATH: src
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +29,8 @@ jobs:
           cache: pip
       - name: Install development dependencies
         run: python -m pip install -e '.[dev]'
+      - name: Run Ruff
+        run: python -m ruff check src tests
       - name: Run complete CPU tests
         run: python -m pytest -q
 

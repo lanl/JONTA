@@ -30,9 +30,10 @@ The current reference implementation contains the major building blocks needed f
 - uniform 0-D deterministic orbit model;
 - analytic circular RAMc guiding-center equations;
 - synchrotron radiation in the deterministic orbit;
-- Euler, midpoint, and RK4 fixed-step integrators behind a common contract;
+- Euler, midpoint, RK4, and fixed Bogacki--Shampine 5(4) integrators behind a common contract;
+- adaptive Bogacki--Shampine 5(4) for CPU-only orbit studies;
 - Maxwellian-background test-particle small-angle collisions;
-- conservative linearized Moller gain-loss large-angle collisions;
+- conservative linearized Møller gain-loss large-angle collisions;
 - fixed-capacity local marker population control with overflow-only stratified thinning;
 - tritium and Compton kinetic sources;
 - radial binning and RAMc-compatible parallel-current deposition;

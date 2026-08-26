@@ -1,9 +1,10 @@
 # Configuration
 
-JONTA uses a strict, host-side YAML configuration for simulations and physical
-benchmarks. The loader validates the complete parameter tree before JAX arrays
-or compiled kernels are created. Physics kernels receive typed runtime
-containers, never raw YAML dictionaries.
+JONTA provides a strict, host-side YAML configuration for drivers that opt into
+the repository-wide configuration schema. The loader validates the complete
+parameter tree before JAX arrays or compiled kernels are created. Physics
+kernels receive typed runtime containers, never raw YAML dictionaries. Legacy
+benchmark drivers remain CLI-driven until they are migrated.
 
 ## Layout
 
@@ -18,8 +19,10 @@ The top-level sections are:
 | `background` | density, temperatures, charge, Coulomb logarithm |
 | `particles` | fixed marker capacity, seed, initialization ranges |
 | `timesteps` | particle, large-angle, coupling, diagnostic cadences |
-| `collisions` | small-angle and Moller operator controls |
+| `collisions` | small-angle and Moller operator controls, including `n_sa` and resolved `p_min` |
 | `population` | fixed-capacity thinning policy |
+| `sources` | optional source-model settings, including thermal reservoir |
+| `boundaries` | optional built-in low/high momentum boundary settings |
 | `diagnostics` | history sampling and exponential-fit controls |
 | `benchmark` | name, provenance description, replicas |
 | `reference` | comparison data and acceptance targets |
@@ -68,3 +71,9 @@ canonical parameter record for new runs.
 Precision is process-static. Select `float64` for validation and supported CPU
 or accelerator backends. `float32` is available for experiments and backends
 without reliable FP64 support.
+
+Sources and boundaries are also extensible at code level. Pass ordinary JAX
+callables through `build_particle_block` using `source_operator=` and
+`boundary_operator=`. YAML selects validated built-in configurations; it does
+not dynamically import arbitrary code. User-defined operators can preserve
+fixed capacity by replacing slots or changing weights in place.

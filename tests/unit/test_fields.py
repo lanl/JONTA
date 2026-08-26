@@ -1,6 +1,10 @@
 import jax.numpy as jnp
 
-from fields.interpolated import AxisymmetricFieldTable, bilinear_regular_grid, sample_axisymmetric_table
+from fields.interpolated import (
+    AxisymmetricFieldTable,
+    bilinear_regular_grid,
+    sample_axisymmetric_table,
+)
 
 
 def test_bilinear_exact_for_affine_field():

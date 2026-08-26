@@ -18,17 +18,17 @@ The initial 0-D and circular 1-D implementations retain RAMc's dimensionless kin
 
 ### 3.1 Time
 
-\[
+$$
 \bar t=t/\tau_{c0},
-\]
+$$
 
 with
 
-\[
+$$
 \tau_{c0}
 =\frac{4\pi\epsilon_0^2m_e^2c^3}
 {n_{e0}e^4\ln\Lambda_0}.
-\]
+$$
 
 Particle and large-angle timesteps are therefore normally specified in units of \(\tau_{c0}\).
 
@@ -36,23 +36,23 @@ Particle and large-angle timesteps are therefore normally specified in units of 
 
 Poloidal-plane coordinates are normalized to minor radius:
 
-\[
+$$
 x=X/a,\qquad y=Y/a,\qquad r=\sqrt{x^2+y^2}.
-\]
+$$
 
 For the circular RAMc geometry,
 
-\[
+$$
 x=r\cos\theta,\qquad y=r\sin\theta.
-\]
+$$
 
 The major-radius factor used in the analytic RAMc equations is
 
-\[
+$$
 R/R_0=1+\epsilon x,
 \qquad
 \epsilon=a/R_0.
-\]
+$$
 
 `phi` is the toroidal angle in radians.
 
@@ -60,43 +60,43 @@ R/R_0=1+\epsilon x,
 
 Momentum is normalized to \(m_ec\):
 
-\[
+$$
 p=|\mathbf p|/(m_ec),
 \qquad
 \gamma=\sqrt{1+p^2},
 \qquad
 \xi=p_\parallel/p.
-\]
+$$
 
 The persistent particle state stores `gamma` rather than `p`.
 
 ### 3.4 Electric field
 
-\[
+$$
 \bar E=E/E_{c0},
 \qquad
 E_{c0}=m_ec/(e\tau_{c0}).
-\]
+$$
 
 The circular field stores `e1(r)` such that
 
-\[
+$$
 E_\phi=E_1(r)/(R/R_0)
-\]
+$$
 
 in normalized units.
 
 ### 3.5 Magnetic field
 
-\[
+$$
 \bar B=B/B_0.
-\]
+$$
 
 The dimensionless cyclotron parameter stored as `a_omega_ce_over_c` is
 
-\[
+$$
 \bar\omega_{ce}=a\omega_{ce0}/c.
-\]
+$$
 
 The orbit equations frequently use its inverse \(c/(a\omega_{ce0})\).
 
@@ -104,9 +104,9 @@ The orbit equations frequently use its inverse \(c/(a\omega_{ce0})\).
 
 `c_tau_over_a` denotes
 
-\[
+$$
 \frac{c\tau_{c0}}{a}.
-\]
+$$
 
 This can be large (often \(10^5\)-\(10^6\)) and sets the separation between orbit and collision timescales.
 
@@ -114,9 +114,9 @@ This can be large (often \(10^5\)-\(10^6\)) and sets the separation between orbi
 
 `alpha_syn` denotes the RAMc parameter
 
-\[
+$$
 \alpha=\tau_{c0}/\tau_s.
-\]
+$$
 
 The local radiation strength includes the appropriate \((B/B_0)^2\) factor.
 
@@ -139,17 +139,17 @@ New plasma modules that use SI must include unit suffixes in variable names.
 
 The normalized current used by the circular RAMc field solver is
 
-\[
+$$
 \bar j=a^2j/I_A,
-\]
+$$
 
 where \(I_A\) is the Alfvén current.
 
 The normalized resistivity is
 
-\[
+$$
 \bar\eta=\frac{\eta I_A}{E_{c0}a^2}.
-\]
+$$
 
 The radial electric-field equation is written in the corresponding RAMc dimensionless variables. `deposit_ramc_parallel_current` and `ramc_spitzer_eta_bar` implement these conventions explicitly.
 
@@ -173,9 +173,9 @@ JONTA preserves the RAMc electron sign convention. The symbol `e` in derivations
 
 For the 0-D normalized equations,
 
-\[
+$$
 \dot\gamma=-v\xi E_\parallel+\cdots.
-\]
+$$
 
 Therefore a positive `E_parallel` accelerates an electron with negative pitch `xi < 0`. Current deposition includes the negative electron charge, so such electrons contribute positive conventional current in the legacy RAMc convention.
 
@@ -208,17 +208,17 @@ A particle slot is physically inactive when `alive=False` and/or `weight=0`. Cod
 
 Pitch is physically restricted to
 
-\[
+$$
 -1\le\xi\le1.
-\]
+$$
 
 The small-angle reference operator reflects stochastic overshoot at these boundaries.
 
 The relativistic energy boundary is
 
-\[
+$$
 \gamma\ge1.
-\]
+$$
 
 The reference small-angle operator reflects stochastic overshoot through \(\gamma=1\). A separate absorbing low-energy boundary may be applied by a boundary model.
 

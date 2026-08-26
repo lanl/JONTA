@@ -1,7 +1,8 @@
 # One-dimensional circular benchmarks
 
 These cases use JONTA's circular, radial 1-D guiding-center geometry. They
-validate invariants, radial transport, and radial avalanche behavior before
+validate invariants, trapped/passing tokamak orbits, radial transport, and radial avalanche behavior before
 plasma coupling is enabled.
 
-Every case also runs the common serial/parallel CPU/GPU execution matrix.
+Where implemented, drivers support serial and parallel CPU execution. GPU
+scaling remains a planned HPC validation study.

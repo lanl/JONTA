@@ -17,29 +17,29 @@ The deterministic characteristics are the circular guiding-center equations
 implemented by src/orbits/ramc_circular.py. In the collisionless,
 radiation-free, axisymmetric limit, the diagnostics are
 
-```math
+$$
 \bar P_\phi = \frac{R}{R_0}\frac{B_\phi}{B}\,\xi p
  + \frac{a\omega_{ce0}}{c}\frac{a}{R_0}
    \int_0^{r/a}\frac{r'}{q(r')}\,dr',
 \qquad
 \bar\mu = \frac{p^2(1-\xi^2)}{2\bar B},
-```
+$$
 
 where \(p=\sqrt{\gamma^2-1}\), \(r/a=\sqrt{x^2+y^2}\), and
 
-```math
+$$
 q(r)=q_0+q_2 r^2,
 \qquad
 \frac{R}{R_0}=1+\epsilon x.
-```
+$$
 
 The near-trapped orbit is identified by repeated sign changes of \(\xi\),
 while the passing orbit retains one sign of \(\xi\) over the integration
 interval. The reported banana width is
 
-```math
+$$
 \Delta r = \max_t r(t)-\min_t r(t).
-```
+$$
 
 The bounce period is estimated from successive zero crossings of \(\xi(t)\).
 These are trajectory diagnostics, not exact per-marker acceptance criteria;
@@ -132,9 +132,9 @@ and invariant histories. The summary table includes synchronized runtime for
 each marker case (the method runtime is identical across markers). The
 circular embedding is
 
-```math
+$$
 R/R_0=1+\epsilon r\cos\theta,\qquad Z/R_0=\epsilon r\sin\theta.
-```
+$$
 
 ## CPU decomposition scaling
 

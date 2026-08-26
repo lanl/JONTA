@@ -46,9 +46,9 @@ These coding tests should run quickly on CPU and every pull request.
 
 For every sampled cold-target event:
 
-```math
+$$
 (\gamma_3-1)+(\gamma_4-1)=\gamma_0-1.
-```
+$$
 
 Parallel momentum reconstructed from the two outgoing particles must equal incoming parallel momentum to roundoff.
 
@@ -90,9 +90,9 @@ Reference parameter family:
 
 JONTA should repeat the test using a timestep sequence
 
-```math
+$$
 \Delta t,\;\Delta t/2,\;\Delta t/4,\ldots
-```
+$$
 
 for each candidate integrator. Error should converge at the expected order until interpolation/roundoff error dominates.
 
@@ -131,9 +131,9 @@ The internal RAMc orbit study provides qualitative topology targets for
 
 The internal RAMc trapped-orbit study gives the flux drift
 
-```math
+$$
 \frac{\Delta\psi_0}{\Delta t}=-R_0E_1c.
-```
+$$
 
 The normalized numerical drift should converge to the analytic value. This is a sensitive sign and electric-field coupling test.
 
@@ -162,11 +162,15 @@ Validation requirements:
 - pitch becomes isotropic, with `\langle\xi\rangle -> 0` and `\langle\xi^2\rangle -> 1/3`;
 - mean histogram/distribution error scales approximately
 
-```math
+$$
 \langle\Delta f\rangle\propto N^{-1/2};
-```
+$$
 
 - results converge with particle timestep independently of marker-number convergence.
+- the resolved lower-momentum floor and (N_{\rm SA}) imply an actual
+  ν_DΔt target; no production coefficient clipping is permitted;
+- the reported static collision-subcycle count is sufficient for every
+  supplied background profile and is refined when the outer timestep grows.
 
 The JONTA temperature/initial-condition scan uses Te=100 eV, 1 keV, 10 keV
 and three deliberately non-equilibrium initial populations (broad uniform
@@ -181,13 +185,13 @@ external digitized curve.
 The internal RAMc transport implementation uses the following banana-regime
 diffusivity relation as an analytical target:
 
-```math
+$$
 \frac{\tau_cD_t}{a^4B_0^2}
 =0.689\sqrt{2\epsilon}\,q^2\frac{R_0^2}{a^2}
 \frac{E_K}{m_ec^2}
 \left(\frac{c}{a\omega_{ce}}\right)^2
 (\tau_c\nu_D).
-```
+$$
 
 Reference parameters include
 
@@ -218,17 +222,17 @@ bump at `p_b=6.0551` for `E/Ec=2.25`, and a bump at `p_b=8.59096667` for
 
 Analytical reference relations include
 
-```math
+$$
 p_O=\sqrt{2}\,\frac{(E+\alpha)(E-1)}{(1+Z)\alpha},
 \qquad
 p_X=\sqrt{\frac{1+(1+Z)/(2\sqrt{2})}{E}},
-```
+$$
 
 with the empirical pitch-integrated bump estimate
 
-```math
+$$
 p_b \simeq p_O/1.55,
-```
+$$
 
 and the runaway-tail spread estimate `(p_O-p_X)/1.8`. Guo Eq. (16) supplies
 the large-p acceleration-channel width used as an additional coefficient check.
@@ -277,9 +281,9 @@ In the relativistic, weak-background-depletion limit, the new operator should re
 
 The corresponding threshold benchmark uses the zero crossing of the fitted exponential population growth and compares with McDevitt Eq. (B15),
 
-```math
+$$
 \frac{E_{av}}{E_c}=1+1.0906\left[\alpha^{0.6}(Z_{eff}+1)\right]^{0.6801}.
-```
+$$
 
 The paper reports excellent agreement for `1/alpha > 10`, with the fit tending to slightly overestimate the Monte-Carlo threshold for smaller `1/alpha`.  JONTA therefore records the sign as well as the magnitude of the threshold residual.
 
@@ -299,19 +303,19 @@ The production conservative model follows the mixed Fokker--Planck--Boltzmann co
 
 For the conservative model, the electron-electron Fokker--Planck remainder uses Eq. (32),
 
-```math
+$$
 \ln\Lambda_{\min}^{LA}
 =\ln\Lambda_0
 +\ln\left[2\frac{c}{v_{Te}}\sqrt{\gamma_{\min}^{LA}-1}\right],
-```
+$$
 
 which accounts for both the relativistic minimum impact parameter and removal of collisions assigned to the Møller operator.  The conventional source-only comparison uses Eq. (33),
 
-```math
+$$
 \ln\Lambda_{ee}^{RE}
 =\ln\Lambda_0
 +\ln\left[\frac{c}{v_{Te}}\sqrt{2(\gamma-1)}\right].
-```
+$$
 
 McDevitt Fig. 13 provides the decisive cutoff-invariance test.  For `Z=1`, `alpha=0.1`, `vTe/c=0.1`, `ln Lambda_0=15`, and `E/Ec=2.05, 2.25, 2.5, 3`, the growth rate should remain approximately flat over a broad interval of `gamma_min^LA-1` below the X-point and then fall once the cutoff approaches/exceeds the runaway separatrix energy.  JONTA stores digitized Fig.-13 values for a pointwise comparison, in addition to testing the plateau itself.
 
@@ -383,9 +387,9 @@ For manufactured radial marker distributions:
 
 Use manufactured solutions for
 
-```math
+$$
 \partial_tE=D L_rE
-```
+$$
 
 with known boundary conditions. Verify second-order temporal convergence of BDF2 after startup and expected spatial convergence of the radial finite differences.
 
@@ -433,10 +437,10 @@ Use constant-power and linear electron-ion exchange problems with analytic solut
 
 Numerically integrate `S_T` over momentum and verify
 
-```math
+$$
 \int d^3p\,S_T
 =(\ln2)n_T/\tau_T.
-```
+$$
 
 Sampled beta spectra should match the analytic distribution by histogram/KS-type statistical tests.
 
@@ -481,7 +485,7 @@ Bitwise-identical floating-point reductions are not required because reduction o
 
 ## 14. Current automated tests
 
-The repository currently includes fast tests for:
+The repository currently includes automated coding tests for:
 
 - explicit integrators;
 - 0-D force sign and stationary limits;
@@ -524,11 +528,11 @@ Before comparing any fitted diffusivity with either Figure 3 or Figure 6, the un
 transport diagnostic must visibly enter a diffusive regime.  For every
 energy/radius point JONTA records and plots
 
-```math
+$$
 \sigma_r^2(t)=\langle\Delta r^2\rangle-\langle\Delta r\rangle^2,
 \qquad
 D=\frac{1}{2}\frac{d\sigma_r^2}{dt},
-```
+$$
 
 including Monte Carlo uncertainty, the post-transient linear fit, and its
 `R^2`.  The complete variance history is retained in the benchmark output.

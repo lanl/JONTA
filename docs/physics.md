@@ -2,81 +2,122 @@
 
 ## 1. Scope
 
-JONTA evolves a runaway-electron kinetic distribution using a Monte Carlo representation. This document defines the physical model independently of the numerical realization. Time integration, fixed-particle sampling, thinning/resampling, binning, GPU execution, and multiphysics coupling algorithms are described in `numerics.md` and `architecture.md`.
+JONTA is a Monte Carlo particle code for kinetic plasma modeling. Distribution
+functions are represented by weighted markers, while particle pushing,
+collisions, sources, boundaries, deposition, and coupling are provided through
+modular interfaces. The numerical realization—time integration,
+fixed-capacity sampling, thinning/resampling, binning, and device execution—is
+described in `numerics.md` and `architecture.md`.
 
-The physics model is modular. In particular, field models, radiation models, small-angle collision operators, large-angle collision operators, source models, and boundary models are replaceable behind stable interfaces.
+The code is not restricted to a particular geometry, species set, or plasma
+closure. Application-specific physics models are defined in the sections that
+follow.
 
-## 2. Kinetic equation
+## 2. Runaway-electron model for tokamak plasmas
 
-Let \(f(\mathbf z,t)\) denote the kinetic electron population represented by JONTA in phase-space coordinates \(\mathbf z\). The organizing kinetic equation is
+The present application is the kinetic evolution of relativistic runaway
+electrons in a magnetized tokamak plasma. The energetic-electron distribution
+is advanced with a relativistic Vlasov–Fokker–Planck–Boltzmann model, using
+guiding-center Lorentz transport, cumulative small-angle collisions, discrete
+large-angle collisions, radiation reaction, and kinetic source terms. The
+background plasma supplies the local field and collision parameters; coupling
+back to a configuration-specific bulk-plasma model is described after the
+kinetic components.
 
-\[
+### 2.1 Kinetic equation
+
+Let $f(\mathbf z,t)$ be the electron distribution in phase space
+$\mathbf z=(\mathbf X,\mathbf p)$. The modeled VFPB system is
+
+$$
 \frac{\partial f}{\partial t}
-+ \dot{\mathbf z}\cdot\nabla_{\mathbf z}f
++ \dot{\mathbf z}_{\mathrm V}\cdot\nabla_{\mathbf z}f
 =
-C_{\mathrm{SA}}[f;f_b]
+C_{\mathrm{FP},ei}[f;f_b]
 +
-C_{\mathrm{LA}}[f;f_b]
+C_{\mathrm{FP},ee}^{\chi<\chi_c}[f;f_b]
 +
-S_T
+C_{\mathrm{B},ee}^{\chi\geq\chi_c}[f;f_b]
 +
-S_C
+C_{\mathrm{syn}}[f]
++
+S_{\mathrm{nuclear}}
 +
 S_{\mathrm{ext}}.
-\]
+$$
 
-Here:
+The terms have the following physical meaning:
 
-- \(\dot{\mathbf z}\) is the deterministic phase-space flow due to electromagnetic forces and radiation reaction;
-- \(C_{\mathrm{SA}}\) is a small-angle collision operator;
-- \(C_{\mathrm{LA}}\) is a large-angle collision operator;
-- \(f_b\) is the background electron distribution against which the collision operators are linearized;
-- \(S_T\) is the tritium beta-decay source;
-- \(S_C\) is the Compton source;
-- \(S_{\mathrm{ext}}\) is any additional externally prescribed kinetic source.
+- $\dot{\mathbf z}_{\mathrm V}\cdot\nabla_{\mathbf z}f$ is relativistic
+  Vlasov phase-space transport from the electromagnetic Lorentz force;
+- $C_{\mathrm{FP},ei}$ is the Fokker-Planck operator for electron-ion
+  collisions;
+- $C_{\mathrm{FP},ee}^{\chi<\chi_c}$ is the Fokker-Planck operator for the
+  cumulative electron-electron scattering below the critical deflection angle
+  $\chi_c$;
+- $C_{\mathrm{B},ee}^{\chi\geq\chi_c}$ is the Boltzmann operator for discrete
+  electron-electron collisions at or above $\chi_c$;
+- $C_{\mathrm{syn}}$ is the conservative momentum-space operator generated
+  by synchrotron radiation reaction;
+- $f_b$ is the prescribed background distribution used by the initial
+  test-particle collision models;
+- $S_{\mathrm{nuclear}}=S_T+S_C$ is the source block containing the tritium
+  and Compton source models, and $S_{\mathrm{ext}}$ is an independent external
+  kinetic source.
 
-JONTA solves this equation through a Monte Carlo characteristic representation rather than by discretizing the kinetic equation directly. Conservative phase-space forms and Jacobian factors may be introduced where required by a particular coordinate formulation, but they are not part of this top-level definition.
+The implementation names are $C_{\mathrm{FP},ei}+C_{\mathrm{FP},ee}
+\equiv C_{\mathrm{SA}}$ and $C_{\mathrm{B},ee}\equiv C_{\mathrm{LA}}$. The
+superscripts specify the shared electron-electron scattering-angle partition,
+not separate physical collision processes. When $f_b$ is prescribed, all
+collision operators are linear in the energetic-electron distribution $f$.
+The plasma-coupled extension will evolve the background state and therefore
+update the coefficients entering these operators.
 
-When \(f_b\) is prescribed, the default small- and large-angle collision models are linear in \(f\).
+JONTA advances this system with a Monte Carlo characteristic method; it does
+not replace the VFPB model with a different equation.
 
-## 3. Deterministic phase-space flow
+### 2.2 Vlasov transport (Lorentz force)
 
-The deterministic characteristics are written as
+The collisionless characteristics contain only the Lorentz force. In the
+guiding-center representation used by JONTA,
 
-\[
-\dot{\mathbf z}
+$$
+\dot{\mathbf z}_{\mathrm V}
 =
-\dot{\mathbf z}_{\mathrm{GC}}
-+
-\dot{\mathbf z}_{\mathrm{rad}},
-\]
+\dot{\mathbf z}_{\mathrm{GC}},
+$$
 
-where \(\dot{\mathbf z}_{\mathrm{GC}}\) is the relativistic guiding-center motion generated by the Lorentz force and \(\dot{\mathbf z}_{\mathrm{rad}}\) is radiation reaction.
+where $\dot{\mathbf z}_{\mathrm{GC}}$ is the relativistic guiding-center
+motion generated by the Lorentz force. Radiation reaction is not part of the
+left-hand-side Vlasov characteristics; it appears on the right-hand side as
+$C_{\mathrm{syn}}$.
 
-### 3.1 Relativistic guiding-center dynamics
+#### 2.2.1 Relativistic guiding-center dynamics
 
-The initial JONTA model adopts the same relativistic guiding-center equations used by RAMc, based on the formulation of Cary and Brizard [1,2]. In \((\mathbf X,p_\parallel,\mu)\) coordinates,
+The guiding-center characteristics use the standard relativistic
+noncanonical formulation of Cary and Brizard [1]. In
+$(\mathbf X,p_\parallel,\mu)$ coordinates,
 
-\[
+$$
 \frac{d\mathbf X}{dt}
 =
 \frac{p_\parallel}{m_e\gamma}
 \frac{\mathbf B^*}{B^*_\parallel}
 +
 \mathbf E^*\times\frac{c\hat{\mathbf b}}{B^*_\parallel},
-\]
+$$
 
-\[
+$$
 \frac{dp_\parallel}{dt}
 =
 -e\,\mathbf E^*\cdot\frac{\mathbf B^*}{B^*_\parallel},
 \qquad
 \frac{d\mu}{dt}=0,
-\]
+$$
 
 with
 
-\[
+$$
 \mathbf E^*
 =
 \mathbf E
@@ -87,9 +128,9 @@ with
 -
 p_\parallel\frac{\partial\hat{\mathbf b}}{\partial t}
 \right),
-\]
+$$
 
-\[
+$$
 \mathbf B^*
 =
 \mathbf B
@@ -97,11 +138,11 @@ p_\parallel\frac{\partial\hat{\mathbf b}}{\partial t}
 \frac{cp_\parallel}{e}\nabla\times\hat{\mathbf b},
 \qquad
 B^*_\parallel=\hat{\mathbf b}\cdot\mathbf B^*,
-\]
+$$
 
 and
 
-\[
+$$
 \gamma
 =
 \sqrt{
@@ -111,31 +152,51 @@ and
 +
 \frac{p_\parallel^2}{m_e^2c^2}
 }.
-\]
+$$
 
-As in RAMc, it is convenient for runaway-electron physics to transform the momentum coordinates to momentum magnitude \(p\) and pitch \(\xi=p_\parallel/p\). The explicit \((p,\xi,\mathbf X)\) characteristic equations are those given in Sec. II.A of the RAMc documentation [2]. JONTA may implement these equations directly, but the orbit model must not depend on a specific magnetic geometry or field representation.
+For runaway-electron diagnostics it is convenient to transform the momentum
+coordinates to magnitude $p$ and pitch $\xi=p_\parallel/p$. The orbit layer may
+use either coordinate representation, provided the equations remain
+independent of the selected magnetic geometry.
 
-### 3.2 Field dependence
+#### 2.2.2 Field dependence
 
 The guiding-center model consumes local electromagnetic quantities supplied by a field model. Depending on the selected formulation, these include
 
-\[
+$$
 \mathbf E,\qquad
 \mathbf B,\qquad
 \nabla B,\qquad
 \nabla\times\mathbf B,\qquad
 \frac{\partial\hat{\mathbf b}}{\partial t},
-\]
+$$
 
 and related derived quantities.
 
 The physics layer does not assume whether these quantities are analytic or interpolated. Axisymmetric fields are expected to be the primary use case, but axisymmetry is not a requirement of the kinetic model.
 
-### 3.3 Synchrotron radiation reaction
+#### 2.2.3 Synchrotron radiation reaction
 
-Synchrotron radiation reaction is included in the deterministic orbit. JONTA initially adopts the same guiding-center radiation model used by RAMc, following Hirvijoki et al. [2,3]. In RAMc normalization, the general momentum-space terms are
+Synchrotron radiation reaction follows the guiding-center transformation of
+Hirvijoki et al. [3]. It is a deterministic momentum-space loss operator on
+the right-hand side of the kinetic equation. In Cartesian momentum variables,
+its conservative form is
 
-\[
+$$
+C_{\mathrm{syn}}[f]
+=
+-\nabla_{\mathbf p}\cdot
+\left(\dot{\mathbf p}_{\mathrm{syn}} f\right).
+$$
+
+In any guiding-center momentum coordinates, the corresponding expression
+includes the appropriate phase-space Jacobian. The orbit module may integrate
+this operator by deterministic characteristics, but that numerical choice does
+not move the physical radiation term to the Vlasov left-hand side. In the
+dimensionless normalization used by the orbit module, the momentum-space
+characteristic rates are
+
+$$
 \left.\frac{dp}{dt}\right|_{\mathrm{syn}}
 =
 -\alpha\gamma p(1-\xi^2)
@@ -144,9 +205,9 @@ Synchrotron radiation reaction is included in the deterministic orbit. JONTA ini
 \frac{p_\parallel}{eB}
 \hat{\mathbf b}\cdot(\nabla\times\hat{\mathbf b})
 \right],
-\]
+$$
 
-\[
+$$
 \left.\frac{d\xi}{dt}\right|_{\mathrm{syn}}
 =
 \alpha\frac{\xi(1-\xi^2)}{\gamma}
@@ -159,53 +220,63 @@ Synchrotron radiation reaction is included in the deterministic orbit. JONTA ini
 \alpha\frac{\gamma(1-\xi^2)^2}{2}
 \frac{p}{eB}
 \hat{\mathbf b}\cdot(\nabla\times\hat{\mathbf b}).
-\]
+$$
 
-For the low-beta approximation used in RAMc these reduce to
+For the low-beta approximation these reduce to
 
-\[
+$$
 \left.\frac{dp}{dt}\right|_{\mathrm{syn}}
 =-\alpha p\gamma(1-\xi^2),
 \qquad
 \left.\frac{d\xi}{dt}\right|_{\mathrm{syn}}
 =\alpha\frac{\xi(1-\xi^2)}{\gamma}.
-\]
+$$
 
-The radiation terms are integrated together with the guiding-center orbit rather than applied as a separate stochastic operator.
+The radiation operator is deterministic and is not sampled as a stochastic
+collision. Operator splitting may advance it in the same particle step as the
+guiding-center map while preserving the VFPB decomposition above.
 
-### 3.4 Bremsstrahlung radiation reaction
+#### 2.2.4 Bremsstrahlung radiation reaction
 
 Bremsstrahlung radiation reaction is omitted from the initial JONTA model. The radiation interface must remain modular so that a bremsstrahlung model can be added later without changing the orbit or integrator interfaces.
 
-## 4. Small-angle collisions
+### 2.3 Small-angle collisions
 
-### 4.1 Default model
+#### 2.3.1 Fokker–Planck model
 
-The default small-angle model is a **linear test-particle collision operator against a Maxwellian background**. It represents the cumulative effect of frequent Coulomb collisions through collisional friction, energy diffusion, and pitch-angle diffusion.
+The default Fokker-Planck model is a **linear test-particle collision
+operator against a Maxwellian background**. It represents the cumulative
+effect of frequent Coulomb collisions through collisional friction, energy
+diffusion, and pitch-angle diffusion. In the implementation the combined
+electron-ion and electron-electron Fokker-Planck contribution is named the
+small-angle operator, $C_{\mathrm{FP},ei}+C_{\mathrm{FP},ee}
+\equiv C_{\mathrm{SA}}$.
 
 Schematically,
 
-\[
+$$
 C_{\mathrm{SA}}[f;f_M]
 =
 -\nabla_{\mathbf p}\cdot(\mathbf A f)
 +
 \frac{1}{2}
 \nabla_{\mathbf p}\nabla_{\mathbf p}:(\mathbf Df),
-\]
+$$
 
-where \(\mathbf A\) and \(\mathbf D\) are the test-particle friction and diffusion coefficients for the selected background model.
+where $\mathbf A$ and $\mathbf D$ are the test-particle friction and diffusion coefficients for the selected background model.
 
-The initial implementation follows the fully ionized Maxwellian model documented for RAMc [2]. In its Monte Carlo realization, pitch-angle scattering and energy diffusion are represented by the stochastic updates
+For a fully ionized Maxwellian background, the Monte Carlo realization uses
+the following stochastic updates for pitch-angle scattering and energy
+diffusion:
 
-\[
+$$
 \xi_{n+1}
 =
 \xi_n(1-\nu_D\Delta t)
 +\delta\sqrt{(1-\xi_n^2)\nu_D\Delta t},
-\]
+$$
 
-\[
+$$
 \gamma_{n+1}
 =
 \gamma_n
@@ -221,23 +292,23 @@ The initial implementation follows the fully ionized Maxwellian model documented
 \sqrt{
 \frac{2p_n}{\gamma_n}\Psi(x_n)\Delta t
 },
-\]
+$$
 
-where \(\delta\) is a unit-variance Gaussian random variable and
+where $\delta$ is a unit-variance Gaussian random variable and
 
-\[
+$$
 \Psi(x)=\frac{\phi(x)-x\phi'(x)}{2x^2},
 \qquad
 x=\frac{c}{v_{Te}}\frac{p}{\gamma}.
-\]
+$$
 
-For a fully ionized plasma, RAMc uses
+For a fully ionized plasma, the corresponding coefficients are
 
-\[
+$$
 C_F=2\left(\frac{c}{v_{Te}}\right)^2\Psi(x),
-\]
+$$
 
-\[
+$$
 \nu_D
 =
 \frac{\gamma}{p^3}
@@ -246,67 +317,75 @@ Z_{\mathrm{eff}}
 +\phi(x)-\Psi(x)
 +\frac{1}{2}\left(\frac{v_{Te}}{c}\right)^4x^2
 \right].
-\]
+$$
 
-These expressions are the initial reference model and validation target. More complete collision models may replace them.
+These expressions define the initial fully ionized Fokker–Planck model. More
+complete collision models, including partial screening, may replace them
+behind the same operator interface.
 
-### 4.2 Modularity
+#### 2.3.2 Modularity
 
 The small-angle collision operator is a replaceable physics component. Future models may include, for example, partially screened collisions, alternative background distributions, or improved relativistic collision coefficients. The simulation driver and orbit model must not depend on the internal form of the selected small-angle operator.
 
-## 5. Large-angle collisions and avalanche
+### 2.4 Boltzmann collisions and avalanche
 
-### 5.1 Physical process
+#### 2.4.1 Møller scattering
 
-The default large-angle model describes relativistic electron-electron Møller scattering,
+The default Boltzmann model describes relativistic electron–electron Møller
+scattering,
 
-\[
+$$
 e^-_1+e^-_2\rightarrow e^-_3+e^-_4,
-\]
+$$
 
-which is the binary process underlying knock-on avalanche generation [4-8]. One incoming electron is drawn from the kinetic population and the other from the prescribed background electron reservoir.
+which is the binary process underlying knock-on avalanche generation [4-8].
+One incoming electron is drawn from the kinetic population and the other from
+the prescribed background electron reservoir.
 
 For each collision,
 
-\[
+$$
 p_1^\mu+p_2^\mu=p_3^\mu+p_4^\mu,
-\]
+$$
 
 so relativistic energy and momentum are conserved.
 
 In the cold-target approximation,
 
-\[
+$$
 \mathbf p_2\simeq0,
 \qquad
 \gamma_2\simeq1,
-\]
+$$
 
 and therefore
 
-\[
+$$
 \gamma_1+1=\gamma_3+\gamma_4,
 \qquad
 K_1=K_3+K_4.
-\]
+$$
 
 Avalanche multiplication therefore represents promotion of a background electron into the energetic population; no electron is created by the binary event.
 
-### 5.2 Linear conservative gain-loss operator
+#### 2.4.2 Linear conservative Boltzmann operator
 
-When the background distribution is prescribed, the large-angle operator is linear in \(f\). The default JONTA model is a conservative gain-loss operator of the form
+When the background distribution is prescribed, the Boltzmann operator is
+linear in $f$. The default JONTA model is a conservative gain-loss operator;
+in the implementation this component is named the large-angle operator,
+$C_{\mathrm{B},ee}\equiv C_{\mathrm{LA}}$. It has the form
 
-\[
+$$
 C_{\mathrm{LA}}[f](z)
 =
 C_{\mathrm{gain}}[f](z)
 -
 C_{\mathrm{loss}}[f](z),
-\]
+$$
 
 or schematically
 
-\[
+$$
 C_{\mathrm{LA}}[f](z)
 =
 \int dz'\,
@@ -317,19 +396,21 @@ K_4(z'\!\rightarrow z)
 \big]f(z')
 -
 \nu_{\mathrm{LA}}(z)f(z).
-\]
+$$
 
 The loss term removes the incoming energetic state participating in a large-angle collision. The two gain kernels represent the two outgoing electrons. The kernels are constructed from the relativistic Møller cross section and the associated collision kinematics.
 
 The energetic population alone is not particle-number conserving: one energetic electron plus one background electron can produce two energetic outgoing electrons. Number, energy, and momentum conservation apply to the combined kinetic-plus-background system. If depletion of the background reservoir becomes significant, the background model must account for that transfer explicitly.
 
-The initial JONTA kernel uses the cold-target Møller differential cross section to sample the energy of one outgoing electron and the corresponding two-body scattering kinematics to reconstruct both outgoing pitches. The associated loss term removes the colliding fraction of the incoming kinetic state. This defines the default conservative linearized operator; its fixed-capacity Monte Carlo realization is described in `numerics.md`. The source-only Møller operator in RAMc remains an important limiting benchmark but is not itself the default JONTA formulation.
+The initial JONTA kernel uses the cold-target Møller differential cross section to sample the energy of one outgoing electron and the corresponding two-body scattering kinematics to reconstruct both outgoing pitches. The associated loss term removes the colliding fraction of the incoming kinetic state. This defines the default conservative linearized operator; its fixed-capacity Monte Carlo realization is described in `numerics.md`. A legacy source-only implementation is retained only as an internal limiting cross-check; it is not the default JONTA formulation or an independent scientific reference.
 
-### 5.3 Møller cross section and RAMc benchmark
+#### 2.4.3 Møller cross section and published avalanche benchmark
 
-RAMc constructs a secondary-electron source using the Møller differential cross section [2,4-8]. Using \(\gamma_0\) for the incident Lorentz factor and \(\gamma\) for the lower-energy outgoing electron,
+The published avalanche model of McDevitt, Guo, and Tang [2] uses the Møller
+differential cross section [2,4-8]. Using $\gamma_0$ for the incident Lorentz
+factor and $\gamma$ for the lower-energy outgoing electron,
 
-\[
+$$
 \frac{d\sigma_M(\gamma_0,\gamma)}{d\gamma}
 =
 \frac{2\pi\gamma_0^2}
@@ -339,113 +420,122 @@ x^2-3x
 +
 \left(\frac{\gamma_0-1}{\gamma_0}\right)^2(1+x)
 \right],
-\]
+$$
 
 with
 
-\[
+$$
 x=\frac{1}{\nu(1-\nu)},
 \qquad
 \nu=\frac{\gamma-1}{\gamma_0-1}.
-\]
+$$
 
-RAMc defines the lower-energy outgoing electron as the secondary, implying
+The lower-energy outgoing electron is defined as the secondary, implying
 
-\[
+$$
 \gamma-1\leq\frac{\gamma_0-1}{2},
 \qquad
 \gamma_0\geq2\gamma-1.
-\]
+$$
 
-JONTA should recover the corresponding RAMc avalanche growth benchmarks in the regime where the conservative gain-loss model reduces to the usual knock-on source description.
+JONTA should recover the corresponding published avalanche growth benchmarks
+in the regime where the conservative gain-loss model reduces to the usual
+knock-on source description.
 
 For the cold-target kinematics, if `gamma_s` denotes one outgoing electron, the scattering angle relative to the incoming momentum satisfies
 
-\[
+$$
 \cos\theta_s =
 \sqrt{
 \frac{(\gamma_0+1)(\gamma_s-1)}
 {(\gamma_0-1)(\gamma_s+1)}
 }.
-\]
+$$
 
-Sampling a uniform azimuth about the incoming momentum yields the same pitch distribution represented by RAMc's `Pi` kernel. The second outgoing Lorentz factor follows from energy conservation,
+Sampling a uniform azimuth about the incoming momentum gives the outgoing
+pitch distribution. The second outgoing Lorentz factor follows from energy
+conservation,
 
-\[
+$$
 \gamma_p = \gamma_0 + 1 - \gamma_s,
-\]
+$$
 
 and its pitch is obtained from vector momentum conservation.
 
-### 5.4 Separation from small-angle collisions
+#### 2.4.4 Separation from small-angle collisions
 
-The Møller differential cross section is singular in the limit of arbitrarily small energy transfer. Those interactions belong to the cumulative small-angle operator. The selected \(C_{\mathrm{SA}}\) and \(C_{\mathrm{LA}}\) models therefore require a consistent partition of collision space so that interactions are neither omitted nor double counted.
+The Møller differential cross section contains a forward-scattering
+singularity. JONTA partitions the electron-electron collision integral by a
+critical deflection angle $\chi_c$:
 
-RAMc regularizes its source formulation using a minimum secondary energy [2].
-For the default conservative mixed Fokker--Planck--Boltzmann model, JONTA uses
-the partition developed by McDevitt, Guo & Tang [13].  The key point is that
-only the **electron-electron** operator is divided between small- and
-large-angle pieces; electron-ion scattering remains entirely in the
-Fokker--Planck operator.
+$$
+C_{ee}[f;f_b]
+=
+C_{\mathrm{FP},ee}^{\chi<\chi_c}[f;f_b]
++
+C_{\mathrm{B},ee}^{\chi\geq\chi_c}[f;f_b].
+$$
 
-For a selected minimum secondary energy `gamma_min^LA`, the conservative
-electron-electron Fokker--Planck remainder uses [13, Eq. (32)]
+Deflections with $\chi<\chi_c$ occur frequently and are accumulated in the
+electron-electron Fokker-Planck drift and diffusion coefficients. Deflections
+with $\chi\geq\chi_c$ are resolved as discrete Boltzmann events using the
+relativistic Møller kernel. The same electron-electron event must not
+contribute to both pieces. Electron-ion scattering remains entirely in
+$C_{\mathrm{FP},ei}$ unless a future model explicitly introduces a separate
+ion-scattering Boltzmann operator.
 
-\[
-\ln\Lambda_{\min}^{LA}
-=\ln\Lambda_0
-+\ln\left[
-2\frac{c}{v_{Te}}\sqrt{\gamma_{\min}^{LA}-1}
-\right].
-\]
+The cutoff $\chi_c$ is a numerical-model parameter subject to a matching
+condition: changing it within its admissible range must leave the converged
+collision rates and avalanche observables invariant. Implementations may use an
+equivalent energy-transfer or secondary-energy parameter internally, but that
+parameter must be mapped to $\chi_c$ through the Møller kinematics and documented
+with the selected convention. The cutoff-invariance tests belong to the
+validation suite.
 
-The source-only benchmark model instead uses the relativistic
-electron-electron Coulomb logarithm [13, Eq. (33)]
-
-\[
-\ln\Lambda_{ee}^{RE}
-=\ln\Lambda_0
-+\ln\left[
-\frac{c}{v_{Te}}\sqrt{2(\gamma-1)}
-\right].
-\]
-
-This paired treatment is required to avoid double counting the same
-electron-electron scattering events in both operators.  The numerical
-implementation and cutoff-invariance benchmark are described in
-`numerics.md` and `validation.md`.
-
-### 5.5 Modularity
+#### 2.4.5 Modularity
 
 The large-angle collision operator is a replaceable physics component. The conservative Møller gain-loss model is the initial/default model, not a permanent restriction of JONTA.
 
-## 6. Tritium beta-decay source
+### 2.5 Nuclear source block
+
+The source block used in the VFPB equation is
+
+$$
+S_{\mathrm{nuclear}}=S_T+S_C,
+$$
+
+where $S_T$ is the tritium beta-decay source and $S_C$ is the Compton
+gamma-ray source. They are documented separately below because their source
+physics and input data differ, but they enter the kinetic equation through the
+single $S_{\mathrm{nuclear}}$ interface.
+
+#### 2.5.1 Tritium beta-decay source
 
 Tritium beta decay provides an irreducible source of energetic electrons in activated deuterium-tritium plasmas,
 
-\[
+$$
 \mathrm T\rightarrow{}^3\mathrm{He}+e^-+\bar\nu_e.
-\]
+$$
 
-JONTA adopts the isotropic kinetic source derived by Ekmark et al. [9]. Let \(p\) be normalized to \(m_ec\), with
+JONTA adopts the isotropic kinetic source derived by Ekmark et al. [8]. Let $p$ be normalized to $m_ec$, with
 
-\[
+$$
 \gamma=\sqrt{1+p^2},
 \qquad
 \beta=\frac{p}{\gamma},
 \qquad
 W=m_ec^2(\gamma-1).
-\]
+$$
 
 The maximum tritium beta-electron kinetic energy is
 
-\[
+$$
 W_{\max}=18.6\ \mathrm{keV}.
-\]
+$$
 
 The source is
 
-\[
+$$
 S_T(p)
 \approx
 C_T\frac{\ln2}{4\pi}\frac{n_T}{\tau_T}
@@ -454,47 +544,47 @@ C_T\frac{\ln2}{4\pi}\frac{n_T}{\tau_T}
 {1-\exp(-4\pi\alpha/\beta)},
 \qquad
 p\leq p_{\max},
-\]
+$$
 
-and \(S_T=0\) for \(p>p_{\max}\). Here \(n_T\) is the tritium density, \(\tau_T\approx4500\) days is the tritium half-life, and \(\alpha\) is the fine-structure constant. The normalization is chosen so that
+and $S_T=0$ for $p>p_{\max}$. Here $n_T$ is the tritium density, $\tau_T\approx4500$ days is the tritium half-life, and $\alpha$ is the fine-structure constant. The normalization is chosen so that
 
-\[
+$$
 \int d^3p\,S_T
 =
 (\ln2)\frac{n_T}{\tau_T}.
-\]
+$$
 
 Ekmark et al. obtain
 
-\[
+$$
 C_T\approx31800.
-\]
+$$
 
-This source is isotropic in momentum space [9].
+This source is isotropic in momentum space [8].
 
-## 7. Compton source
+#### 2.5.2 Compton source
 
-Gamma photons incident on plasma electrons can generate energetic electrons through Compton scattering. JONTA adopts the isotropic kinetic source derived by Ekmark et al. [9]. Both free and bound electrons may contribute through the total target-electron density \(n_{e,\mathrm{tot}}\).
+Gamma photons incident on plasma electrons can generate energetic electrons through Compton scattering. JONTA adopts the isotropic kinetic source derived by Ekmark et al. [8]. Both free and bound electrons may contribute through the total target-electron density $n_{e,\mathrm{tot}}$.
 
-For incident photon energy \(W_\gamma\), scattered photon energy
+For incident photon energy $W_\gamma$, scattered photon energy
 
-\[
+$$
 W'_\gamma=W_\gamma-W,
-\]
+$$
 
-and electron scattering angle \(\theta\), the kinematics satisfy
+and electron scattering angle $\theta$, the kinematics satisfy
 
-\[
+$$
 \cos\theta
 =
 1-
 \frac{m_ec^2}{W_\gamma}
 \frac{W}{W'_\gamma}.
-\]
+$$
 
-The Klein-Nishina differential cross section is [10]
+The Klein-Nishina differential cross section is [9]
 
-\[
+$$
 \frac{d\sigma}{d\Omega}
 =
 \frac{r_e^2}{2}
@@ -506,11 +596,11 @@ The Klein-Nishina differential cross section is [10]
 -
 \sin^2\theta
 \right].
-\]
+$$
 
-For an isotropic photon distribution, the kinetic source is [9]
+For an isotropic photon distribution, the kinetic source is [8]
 
-\[
+$$
 S_C(p)
 =
 \frac{n_{e,\mathrm{tot}}}{2}
@@ -521,80 +611,87 @@ S_C(p)
 \frac{d\sigma}{d\Omega}
 \frac{\beta}
 {\left(W_\gamma/(m_ec^2)+1-\gamma\right)^2},
-\]
+$$
 
 with the lower kinematic limit
 
-\[
+$$
 \frac{W_{\gamma0}}{m_ec^2}
 =
 \frac{p+\gamma-1}{2}
-\]
+$$
 
-when photon energy is expressed in units of \(m_ec^2\). \(\Gamma_\gamma(W_\gamma)\) is the incident gamma-ray energy-flux spectrum and is supplied as part of the source model.
+when photon energy is expressed in units of $m_ec^2$. $\Gamma_\gamma(W_\gamma)$ is the incident gamma-ray energy-flux spectrum and is supplied as part of the source model.
 
-Ekmark et al. use an ITER-motivated spectrum based on Martín-Solís et al. [11], but JONTA should permit arbitrary prescribed gamma spectra. Their source is consistent with the corresponding fluid source when integrated over the runaway region [9].
+Ekmark et al. use an ITER-motivated spectrum based on Martín-Solís et al. [10], but JONTA should permit arbitrary prescribed gamma spectra. Their source is consistent with the corresponding fluid source when integrated over the runaway region [8].
 
-## 8. Additional external source
+### 2.6 Additional external source
 
-\(S_{\mathrm{ext}}\) is a modular externally prescribed kinetic source. It is distinct from tritium and Compton generation so that additional seed mechanisms, injection models, synthetic test sources, or future physical source terms can be introduced without changing the kinetic equation.
+$S_{\mathrm{ext}}$ is a modular externally prescribed kinetic source. It is distinct from tritium and Compton generation so that additional seed mechanisms, injection models, synthetic test sources, or future physical source terms can be introduced without changing the kinetic equation.
 
 Each external source model must define its normalization, phase-space distribution, spatial dependence, and time dependence.
 
-## 9. Background plasma
+### 2.7 Background plasma
 
 The background plasma supplies the local parameters required by the kinetic operators and participates in the multiphysics evolution. The initial model will evolve separate electron and ion temperatures together with species and charge-state information. The background state may therefore include
 
-\[
+$$
 n_e,\qquad
 T_e,\qquad
 T_i,\qquad
 \{n_{s,Z}\},\qquad
 Z_{\mathrm{eff}},\qquad
 \eta,
-\]
+$$
 
-where \(n_{s,Z}\) denotes the density of species \(s\) in charge state \(Z\), and \(\eta\) is the plasma resistivity. Additional species-dependent quantities may be included as required by a selected plasma or collision model.
+where $n_{s,Z}$ denotes the density of species $s$ in charge state $Z$, and $\eta$ is the plasma resistivity. Additional species-dependent quantities may be included as required by a selected plasma or collision model.
 
-Charge-state evolution and associated atomic coefficients will initially be obtained from OPEN-ADAS / ADAS data [12]. The atomic-data layer must remain modular: the electron and ion energy equations consume ionization, recombination, radiation, and related coefficients through an atomic-data interface rather than calling OPEN-ADAS directly. This permits alternative atomic models or preprocessed coefficient tables to be used without changing the plasma solver.
+Charge-state evolution and associated atomic coefficients will initially be obtained from OPEN-ADAS / ADAS data [11]. The atomic-data layer must remain modular: the electron and ion energy equations consume ionization, recombination, radiation, and related coefficients through an atomic-data interface rather than calling OPEN-ADAS directly. This permits alternative atomic models or preprocessed coefficient tables to be used without changing the plasma solver.
 
 Physics modules consume background quantities through a background-plasma interface rather than assuming a particular transport, atomic, or equilibrium model.
 
-## 10. Kinetic moments
+### 2.8 Kinetic moments
 
 The kinetic population supplies moments required by diagnostics and by the coupled plasma system. The primary moment is the kinetic current density,
 
-\[
+$$
 \mathbf j_{\mathrm{kin}}
 =
 -e\int d^3p\,\mathbf v f.
-\]
+$$
 
 Other moments may include energetic-electron density,
 
-\[
+$$
 n_{\mathrm{kin}}=\int d^3p\,f,
-\]
+$$
 
 kinetic energy density, collisional power transfer, and spatial loss rates.
 
 The exact definition of a "runaway" subset used for diagnostics is a model/diagnostic choice and should not be embedded into the evolution operators unless physically required.
 
-## 11. Boundary and loss physics
+### 2.9 Boundary and loss physics
 
 Particle loss to material or computational boundaries is represented through a modular boundary model. The initial implementation must support removal of a kinetic marker when its guiding-center trajectory exits the confined simulation domain.
 
 Momentum-space treatments such as low-energy removal, thermal reinjection, or coupling back into the bulk are separate model choices and must not be hidden inside the orbit or collision operators.
 
-## 12. Multiphysics plasma coupling
+### 2.10 Multiphysics plasma coupling
 
 The kinetic model couples back to the background plasma through deposited moments, most importantly the kinetic/runaway current and collisional power transfer. JONTA treats this as a separate multiphysics layer rather than as part of the particle orbit equations.
 
-### 12.1 Ohm's law and electric-field evolution
+The equations in this section are reference reductions for the initial slab
+and circular 1-D configurations. They define coupling contracts and limiting
+models, not a universal MHD equation; a future 2-D implementation will supply
+its own geometry-appropriate bulk operator while retaining the same kinetic
+moment interface.
 
-A reference electric-field model is the RAMc form obtained by combining Ampere/Faraday evolution with Ohm's law [2], schematically
+#### 2.10.1 Ohm's law and electric-field evolution
 
-\[
+A reference reduced electric-field model, of the form used in RAMc, is obtained
+by combining Ampere/Faraday evolution with Ohm's law, schematically
+
+$$
 \frac{\partial\mathbf E}{\partial t}
 =
 \frac{\eta}{\mu_0}\nabla^2\mathbf E
@@ -602,11 +699,11 @@ A reference electric-field model is the RAMc form obtained by combining Ampere/F
 \mathbf E\frac{\partial\ln\eta}{\partial t}
 -
 \eta\frac{\partial\mathbf j_{\mathrm{kin}}}{\partial t},
-\]
+$$
 
 with geometry-appropriate reductions used for axisymmetric applications. The resistivity depends on the evolving background plasma, while the kinetic current depends on the electric field through the runaway-electron dynamics. This produces the nonlinear feedback
 
-\[
+$$
 \mathbf E
 \rightarrow
 f
@@ -614,11 +711,11 @@ f
 \mathbf j_{\mathrm{kin}}
 \rightarrow
 \mathbf E.
-\]
+$$
 
-### 12.2 Electron energy equation
+#### 2.10.2 Electron energy equation
 
-The electron energy equation will evolve \(T_e\) and may contain, according to the selected plasma model,
+The electron energy equation will evolve $T_e$ and may contain, according to the selected plasma model,
 
 - Ohmic heating;
 - collisional power transfer from runaway electrons;
@@ -627,11 +724,11 @@ The electron energy equation will evolve \(T_e\) and may contain, according to t
 - transport losses or diffusion;
 - externally prescribed electron heating.
 
-The detailed closures and transport models are modular and are not fixed by the kinetic solver. Atomic radiation and ionization-related quantities are supplied through the atomic-data interface, initially using OPEN-ADAS / ADAS data [12].
+The detailed closures and transport models are modular and are not fixed by the kinetic solver. Atomic radiation and ionization-related quantities are supplied through the atomic-data interface, initially using OPEN-ADAS / ADAS data [11].
 
-### 12.3 Ion energy equation
+#### 2.10.3 Ion energy equation
 
-The ion energy equation will evolve \(T_i\) separately from \(T_e\). It may contain
+The ion energy equation will evolve $T_i$ separately from $T_e$. It may contain
 
 - electron-ion energy exchange;
 - ion transport;
@@ -640,32 +737,34 @@ The ion energy equation will evolve \(T_i\) separately from \(T_e\). It may cont
 
 A single-temperature approximation may be implemented as an optional reduced model, but it is not the default physical assumption.
 
-### 12.4 Charge-state evolution
+#### 2.10.4 Charge-state evolution
 
-Species charge-state populations \(n_{s,Z}\) are evolved using ionization and recombination coefficients obtained from the selected atomic-data model. OPEN-ADAS / ADAS is the initial data source [12]. Charge-state evolution couples back to the kinetic and plasma systems through quantities including
+Species charge-state populations $n_{s,Z}$ are evolved using ionization and recombination coefficients obtained from the selected atomic-data model. OPEN-ADAS / ADAS is the initial data source [11]. Charge-state evolution couples back to the kinetic and plasma systems through quantities including
 
-\[
+$$
 n_e,\qquad Z_{\mathrm{eff}},\qquad \eta,
-\]
+$$
 
 as well as radiation losses and collision coefficients.
 
 The resulting feedback is therefore generally nonlinear:
 
-\[
+$$
 (f,\mathbf E,T_e,T_i,\{n_{s,Z}\})
 \longleftrightarrow
 (\mathbf j_{\mathrm{kin}},P_{\mathrm{kin}},\eta,P_{\mathrm{rad}},\ldots).
-\]
+$$
 
 The numerical treatment of this coupled system is described in `numerics.md`. The initial plan is an implicit BDF2 update at the plasma-coupling cadence; that numerical choice is not part of the physical model itself.
 
-## 13. Initial model hierarchy
+### 2.11 Initial model hierarchy
 
 The initial JONTA physics model consists of:
 
-- relativistic guiding-center Lorentz dynamics following RAMc;
-- synchrotron radiation reaction included in the deterministic orbit;
+- relativistic guiding-center Lorentz dynamics;
+- synchrotron radiation reaction represented by the deterministic right-hand-side
+  operator $C_{\mathrm{syn}}$ (which may be integrated by deterministic
+  characteristics);
 - bremsstrahlung radiation reaction omitted initially;
 - a linear Maxwellian-background test-particle small-angle collision operator;
 - a conservative linearized Møller large-angle gain-loss operator;
@@ -681,16 +780,14 @@ Field, radiation, collision, source, boundary, and plasma models are intended to
 ## References
 
 1. J. R. Cary and A. J. Brizard, "Hamiltonian theory of guiding-center motion," *Reviews of Modern Physics* **81**, 693-738 (2009), doi:10.1103/RevModPhys.81.693.
-2. C. J. McDevitt, *A particle-in-cell code for runaway electrons*, RAMc documentation (2022), supplied with the JONTA project.
+2. C. J. McDevitt, Z. Guo, and X.-Z. Tang, "Avalanche mechanism for runaway electron amplification in a tokamak plasma," *Plasma Physics and Controlled Fusion* **61**, 054008 (2019), doi:10.1088/1361-6587/ab0d6d.
 3. E. Hirvijoki, J. Decker, A. J. Brizard, and O. Embreus, "Guiding-centre transformation of the radiation-reaction force in a non-uniform magnetic field," *Journal of Plasma Physics* **81** (2015), doi:10.1017/S0022377815000103.
 4. C. Møller, *Annalen der Physik* **406**, 531 (1932).
 5. P. Helander, M. Lisak, and D. Ryutov, *Plasma Physics and Controlled Fusion* **35**, 363 (1993).
 6. A. H. Boozer, *Physics of Plasmas* **22**, 032504 (2015), doi:10.1063/1.4913582.
 7. C. Liu, D. P. Brennan, A. H. Boozer, and A. Bhattacharjee, *Plasma Physics and Controlled Fusion* **59**, 024003 (2017), doi:10.1088/1361-6587/59/2/024003.
-8. C. J. McDevitt, Z. Guo, and X.-Z. Tang, *Plasma Physics and Controlled Fusion* **60**, 024004 (2018), doi:10.1088/1361-6587/aa9b93.
-9. I. Ekmark, M. Hoppe, T. Fülöp, P. Jansson, L. Antonsson, O. Vallhagen, and I. Pusztai, "Fluid and kinetic studies of tokamak disruptions using Bayesian optimization," *Journal of Plasma Physics* **90**, 905900306 (2024), doi:10.1017/S0022377824000606.
-10. O. Klein and Y. Nishina, "Über die Streuung von Strahlung durch freie Elektronen nach der neuen relativistischen Quantendynamik von Dirac," *Zeitschrift für Physik* **52**, 853-868 (1929).
-11. J. R. Martín-Solís, A. Loarte, and M. Lehnen, "Formation and termination of runaway beams in ITER disruptions," *Nuclear Fusion* **57**, 066025 (2017), doi:10.1088/1741-4326/aa6939.
+8. I. Ekmark, M. Hoppe, T. Fülöp, P. Jansson, L. Antonsson, O. Vallhagen, and I. Pusztai, "Fluid and kinetic studies of tokamak disruptions using Bayesian optimization," *Journal of Plasma Physics* **90**, 905900306 (2024), doi:10.1017/S0022377824000606.
+9. O. Klein and Y. Nishina, "Über die Streuung von Strahlung durch freie Elektronen nach der neuen relativistischen Quantendynamik von Dirac," *Zeitschrift für Physik* **52**, 853-868 (1929).
+10. J. R. Martín-Solís, A. Loarte, and M. Lehnen, "Formation and termination of runaway beams in ITER disruptions," *Nuclear Fusion* **57**, 066025 (2017), doi:10.1088/1741-4326/aa6939.
 
-12. H. P. Summers, *The ADAS User Manual*, version 2.6 (2004); OPEN-ADAS, Atomic Data and Analysis Structure.
-13. C. J. McDevitt, Z. Guo, and X.-Z. Tang, "Avalanche mechanism for runaway electron amplification in a tokamak plasma," *Plasma Physics and Controlled Fusion* **61**, 054008 (2019), doi:10.1088/1361-6587/ab0d6d.
+11. H. P. Summers, *The ADAS User Manual*, version 2.6 (2004); OPEN-ADAS, Atomic Data and Analysis Structure.

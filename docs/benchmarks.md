@@ -44,8 +44,6 @@ CPU decomposition scaling uses the same fixed-shape collision kernel and
 logical XLA CPU devices. See the benchmark README for the exact scaling
 command and interpretation.
 
-## Guiding-center invariant scan
-
 ## Tokamak trapped/passing orbits
 
 The collisionless circular-tokamak orbit benchmark is:

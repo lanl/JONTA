@@ -10,7 +10,7 @@ from collisions.small_angle import small_angle_step
 from core.config import MollerConfig, SmallAngleConfig
 from core.initialization import uniform_markers
 from core.state import BackgroundProfiles
-from diagnostics import total_weight, weighted_mean_gamma
+from diagnostics.moments import total_weight, weighted_mean_gamma
 from fields.uniform import UniformField
 from integrators import rk4_step
 from orbits.zero_d import zero_d_rhs

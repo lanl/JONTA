@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 
-from core.constants import ALFVEN_CURRENT_A, ME_C2_EV, PI
 from collisions.coulomb import thermal_coulomb_log
+from core.constants import ALFVEN_CURRENT_A, ME_C2_EV, PI
 
 
 def ramc_spitzer_eta_bar(

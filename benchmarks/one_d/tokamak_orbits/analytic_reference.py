@@ -15,8 +15,12 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-from run import _git_metadata, _load_config, make_case
 from scipy.integrate import solve_ivp
+
+if __package__:  # Package invocation: ``python -m benchmarks.one_d.tokamak_orbits.analytic_reference``.
+    from .run import _git_metadata, _load_config, make_case
+else:  # Direct script invocation used by benchmark documentation.
+    from run import _git_metadata, _load_config, make_case
 
 from core.state import KinematicState
 from diagnostics.invariants import (

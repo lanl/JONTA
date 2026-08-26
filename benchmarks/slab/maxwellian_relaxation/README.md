@@ -9,20 +9,20 @@ obtained by linearizing the nonlinear Coulomb collision operator about
 $f_M$. The spatially homogeneous equation, with all forces and sources
 disabled, is
 
-```math
+$$
 \frac{\partial f}{\partial t}
 =C_{\rm SA}[f;f_M].
-```
+$$
 
 JONTA represents the linearized small-angle operator in Fokker–Planck form,
 
-```math
+$$
 C_{\rm SA}[f;f_M]
 =-\nabla_{\mathbf p}\!\cdot\!\left(\mathbf A[f_M]f\right)
 +\frac{1}{2}\nabla_{\mathbf p}\nabla_{\mathbf p}:
  \left(\mathbf D[f_M]f\right)
 =-\nabla_{\mathbf p}\!\cdot\boldsymbol{\Gamma}_{\mathbf p},
-```
+$$
 
 where $\mathbf A$ is the collisional-friction vector and $\mathbf D$ is the
 diffusion tensor. The tensor contains energy diffusion and pitch-angle
@@ -31,33 +31,33 @@ $n_e$, $T_e$, and $Z_{\rm eff}$.
 
 For a relativistic Maxwellian background,
 
-```math
+$$
 f_M(p)=\mathcal N
 \exp\!\left[-\frac{\gamma-1}{\theta_e}\right],
 \qquad
 \gamma=\sqrt{1+\frac{p^2}{m_e^2c^2}},
 \qquad
 \theta_e=\frac{T_e}{m_ec^2}.
-```
+$$
 
 The Maxwellian is isotropic, so $\partial_\xi f_M=0$ for
 $\xi=p_\parallel/p$. The friction and energy-diffusion coefficients obey the
 Einstein (detailed-balance) relation
 
-```math
+$$
 A_i[f_M]
 =\frac{1}{2f_M}
 \frac{\partial}{\partial p_j}
 \left(D_{ij}[f_M]f_M\right).
-```
+$$
 
 Consequently, the momentum-space flux vanishes identically,
 
-```math
+$$
 \boldsymbol{\Gamma}_{\mathbf p}[f_M;f_M]=0,
 \qquad
 C_{\rm SA}[f_M;f_M]=0.
-```
+$$
 
 The displayed identity is the analytic null-space condition. This benchmark
 then tests convergence toward that equilibrium: it starts from non-equilibrium
@@ -66,26 +66,31 @@ Finite-marker Monte Carlo trajectories fluctuate around the stationary
 distribution, so this is not an exact per-marker invariance test. The
 corresponding equilibrium kinetic-energy density is
 
-```math
+$$
 P_M(K)\,dK\propto p\gamma\,e^{-K/T_e}\,dK,
 \qquad
 p=m_ec\sqrt{\gamma^2-1}.
-```
+$$
 
 The numerical diagnostics are
 
-```math
+$$
 D_{\rm KS}(P_K,P_M)\to0,\qquad
 \frac{\langle K\rangle}{\langle K\rangle_M}\to1,\qquad
 \langle\xi\rangle\to0,\qquad
 \langle\xi^2\rangle\to\frac13.
-```
+$$
 
 The default scan uses $T_e=100\,\mathrm{eV},1\,\mathrm{keV},10\,\mathrm{keV}$
-and uniform, beam, and bimodal initial marker distributions. The fixed
-collision timestep is $\Delta t=5\times10^{-3}\tau_{\rm th}$ and the
+and uniform, beam, and bimodal initial marker distributions. The outer
+collision interval is $\Delta t=5\times10^{-3}\tau_{\rm th}$ and the
 integration interval is $30\tau_{\rm th}$, with
-$\tau_{\rm th}\propto(v_{Te}/c)^3$.
+$\tau_{\rm th}\propto(v_{Te}/c)^3$.  The collision model uses
+$N_{\rm SA}=100$ and uses the resolved thermal momentum
+$p_{\min}=v_{Te}/c$ when estimating the worst-case deflection frequency. The
+energy coefficients retain their analytic low-momentum limit; the driver
+derives a fixed subcycle count and records the target
+$\nu_D\Delta t_{\rm SA}\le 10^{-2}$.
 
 ## Reproduce the results
 
@@ -113,12 +118,12 @@ PYTHONPATH=src:. JAX_PLATFORMS=cpu \
 ~~~
 
 The convergence output uses \(T_e=1\,\mathrm{keV}\), marker counts
-\(512,1024,2048,4096\) per initial distribution, collision timesteps
+\(512,1024,2048,4096\) per initial distribution, collision intervals
 \(2.5\times10^{-3},5\times10^{-3},10^{-2}\,\tau_{\rm th}\), and seeds
-\(41,43,47\). It records final distribution metrics and synchronized runtime
-for every case. The finite-marker KS distance decreases with marker count;
-the timestep study remains statistical rather than strictly monotone, so these
-results establish a resolution study but not a universal pass/fail tolerance.
+\(41,43,47\). It records the derived collision subcycle count and final
+distribution metrics for every case. The timestep study remains statistical
+rather than strictly monotone, so these results establish a resolution study
+but not a universal pass/fail tolerance.
 
 ## CPU scalability
 
@@ -150,6 +155,10 @@ and bimodal initial populations at each temperature.
 | 1,000 | 0.01956 | 0.9806–1.0002 (range) | 0.01078 | 0.00399 |
 | 10,000 | 0.02070 | 0.9809–0.9996 (range) | 0.01041 | 0.00397 |
 
+The corresponding serial timings for this run were 10.64 s, 10.32 s, and
+10.41 s for 100 eV, 1 keV, and 10 keV, respectively.  Each case used one
+derived collision subcycle and the target $\nu_D\Delta t_{\rm SA}=0.01$.
+
 The corresponding steady-state CPU timing used 12,288 total markers at
 $T_e=1\,\mathrm{keV}$:
 
@@ -175,6 +184,6 @@ Statistical tolerances belong to the benchmark configuration and should be
 revisited as the marker, timestep, and seed studies are extended.
 
 This benchmark is currently reproducible from its CLI defaults and the
-manifest archived beside the generated outputs. A typed YAML configuration and
-resolved-configuration archive will be added when the driver is integrated
-with the repository-wide benchmark configuration loader.
+manifest archived beside generated outputs. Integration with the repository-
+wide typed YAML configuration loader is deferred until the benchmark driver is
+migrated.

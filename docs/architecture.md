@@ -58,7 +58,6 @@ jonta/
 ├── tests/
 │   ├── unit/
 │   ├── integration/
-│   ├── validation/
 │   ├── regression/
 │   └── performance/
 ├── benchmarks/
@@ -144,7 +143,10 @@ Future implementations may include EFIT, MHD, spectral, and composite field back
 
 ### 5.2 `orbits/`
 
-Owns deterministic characteristics. Radiation reaction belongs here because it is part of deterministic phase-space flow.
+Owns deterministic particle maps. The physical Lorentz characteristics define
+the Vlasov transport term; synchrotron radiation is a right-hand-side loss
+operator, even when the numerical integrator advances it as a deterministic
+momentum-space map in the same particle step.
 
 Current implementations:
 
@@ -162,9 +164,10 @@ Current implementations:
 
 - Euler (debugging/reference);
 - explicit midpoint/RK2;
-- RK4.
+- RK4;
+- fixed-step and adaptive Bogacki--Shampine 5(4).
 
-Future structure-preserving or symplectic guiding-center integrators should implement the same construction-time contract.
+Future orbit integrators should implement the same construction-time contract.
 
 ### 5.4 `collisions/`
 
@@ -177,7 +180,9 @@ Collision operators do not perform field interpolation or plasma evolution.
 
 ### 5.5 `sources/`
 
-Contains kinetic sources independent of collision operators:
+Contains kinetic sources independent of collision operators. Tritium and
+Compton contributions are exposed through the combined $S_{\mathrm{nuclear}}$
+source block; external injection remains $S_{\mathrm{ext}}$:
 
 - tritium beta decay;
 - Compton scattering;
@@ -270,7 +275,7 @@ state at t_n
 |                                                  |
 | repeated dt_p:                                  |
 |   small-angle half step (optional Strang)       |
-|   deterministic orbit + radiation               |
+|   Lorentz orbit + synchrotron RHS map            |
 |   small-angle half step                         |
 |   boundary mask                                 |
 |                                                  |
@@ -367,7 +372,8 @@ The repository currently contains executable reference implementations for:
 
 - 0-D uniform-field deterministic dynamics;
 - circular 1-D RAMc guiding-center dynamics;
-- fixed-step RK integration;
+- fixed-step Euler, midpoint, RK4, and Bogacki--Shampine 5(4) integration;
+- adaptive Bogacki--Shampine 5(4) for CPU orbit studies;
 - Maxwellian-background small-angle collisions;
 - conservative weighted Møller large-angle gain/loss;
 - fixed-capacity compaction and overflow-only stratified thinning;
@@ -378,4 +384,6 @@ The repository currently contains executable reference implementations for:
 - electron/ion thermal-energy bookkeeping;
 - particle-first JAX sharding helpers.
 
-These are a development baseline, not yet a claim of full physics validation against every RAMc benchmark.
+These are a development baseline, not yet a claim of full physics validation
+against every legacy or published benchmark. RAMc comparisons are internal
+implementation cross-checks; they are not independent scientific evidence.

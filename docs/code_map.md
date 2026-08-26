@@ -9,12 +9,12 @@ This document is a navigation aid for maintainers and LLM agents. It maps the ma
 | Kinetic state `(gamma, xi, x, y, phi)` | `src/core/state.py` | unit tests across modules |
 | RAMc normalization | `src/core/config.py`, `docs/conventions.md` | benchmark configuration review |
 | Uniform 0-D Lorentz + synchrotron characteristics | `src/orbits/zero_d.py`, `src/orbits/radiation.py` | `tests/unit/test_zero_d.py` |
-| Circular RAMc guiding-center characteristics | `src/orbits/ramc_circular.py` | `tests/unit/test_circular_orbit.py`; RAMc Secs. III.A, III.H, IV.A |
+| Circular RAMc guiding-center characteristics | `src/orbits/ramc_circular.py` | `tests/unit/test_circular_orbit.py`; internal RAMc implementation sections III.A, III.H, IV.A |
 | Circular analytic field/profile sampling | `src/fields/circular.py`, `src/fields/profiles.py` | orbit tests |
 | Axisymmetric numerical field interpolation primitive | `src/fields/interpolated.py` | `tests/unit/test_fields.py`; production interpolation convergence remains backend-specific |
-| Euler / midpoint / RK4 | `src/integrators/explicit.py` | `tests/unit/test_integrators.py`; orbit convergence suite |
+| Euler / midpoint / RK4 / Bogacki--Shampine 5(4) | `src/integrators/explicit.py` | `tests/unit/test_integrators.py`; orbit convergence suite |
 | Maxwellian test-particle small-angle collisions, including partially screened pitch scattering | `src/collisions/small_angle.py`, `src/collisions/coulomb.py` | `tests/unit/test_small_angle.py`; Maxwellian relaxation; McDevitt 2019 Figs. 3 and 6 |
-| Møller differential/integrated cross section | `src/collisions/moller.py` | `tests/unit/test_moller.py`; RAMc Sec. II.C / Fig. 15 |
+| Møller differential/integrated cross section | `src/collisions/moller.py` | `tests/unit/test_moller.py`; internal legacy implementation cross-check |
 | Conservative Møller gain-loss realization | `src/collisions/moller.py::gain_loss_candidates` | energy/weight unit tests; avalanche growth validation |
 | Fixed-capacity compaction and overflow thinning | `src/population/capacity.py`, `src/resampling/multinomial.py` | `tests/unit/test_population.py`; `tests/unit/test_resampling.py`; `benchmarks/test_population_statistics.py` |
 | Tritium source (Ekmark 2024) | `src/sources/tritium.py` | `tests/unit/test_sources.py`; normalization integral TODO |
@@ -42,7 +42,11 @@ This document is a navigation aid for maintainers and LLM agents. It maps the ma
 | Particle sharding | `src/parallel/sharding.py` | deterministic CPU multi-device test in `tests/integration/test_parallel_orbit.py`; local population test in `tests/integration/test_parallel_population.py` |
 | Compiled particle block / operator composition | `src/simulation.py` | `tests/integration/test_simulation.py` |
 
-## RAMc source mapping
+## Internal RAMc source mapping
+
+This section records implementation provenance for the legacy RAMc code. RAMc
+is not a published scientific reference; published comparisons and acceptance
+targets are recorded under `benchmarks/`.
 
 The supplied legacy source is used as a reference, not copied structurally.
 

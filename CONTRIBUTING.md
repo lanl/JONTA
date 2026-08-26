@@ -29,8 +29,10 @@ python -m ruff check path/to/changed/files
 PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q
 ```
 
-The full-tree Ruff cleanup is tracked separately; do not mass-reformat
-unrelated legacy benchmark files in a focused change.
+CI lint covers `src/` and coding tests. Benchmark drivers are executable
+validation programs with benchmark-specific dependencies; lint touched drivers
+when changing them, but do not mass-reformat unrelated files in a focused
+change.
 
 ## Physics and benchmark changes
 
