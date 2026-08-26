@@ -14,8 +14,8 @@ numerics, benchmarks, or execution code.
 ## Before opening a pull request
 
 - keep the change focused and explain the physical or numerical motivation;
-- add or update the smallest relevant coding test; keep physics validation in
-  `tests/validation/` and paper benchmarks in `benchmarks/`;
+- add or update the smallest relevant coding test; keep physical validation
+  and paper comparisons in `benchmarks/`;
 - update the governing document and `docs/code_map.md` when an interface,
   equation, or module boundary changes;
 - run the complete coding-test suite;
@@ -27,7 +27,6 @@ The standard local checks are:
 ```bash
 python -m ruff check path/to/changed/files
 PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q
-PYTHONPATH=src JAX_PLATFORMS=cpu python -m pytest -q tests/validation
 ```
 
 The full-tree Ruff cleanup is tracked separately; do not mass-reformat
