@@ -1,5 +1,9 @@
 # JONTA
 
+Just anOther fuNcTionAl pusher
+
+Approved for open source under #O5194.
+
 JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for runaway electrons.
 
 JONTA is released under the [MIT License](LICENSE). Public contribution,
@@ -14,7 +18,7 @@ JONTA is designed for:
 - **geometry- and field-representation agnostic physics**, with 0-D and axisymmetric circular RAMc-like models supplied as the first reference implementations;
 - **analytic or interpolated electromagnetic fields** behind interchangeable field backends;
 - **modular numerical physics**, including swappable integrators, collision operators, source models, resamplers, boundary models, depositors, and plasma closures;
-- **physics-driven convergence and validation**, using the supplied RAMc documentation and published runaway-electron benchmarks.
+- **physics-driven convergence and validation**, using analytical results and published runaway-electron benchmarks. RAMc is used only as internal implementation provenance and a legacy comparison where explicitly identified.
 
 Automatic differentiation is available where the JAX-native formulation permits it, but GPU throughput, numerical robustness, and physical correctness are the primary design requirements.
 
@@ -44,7 +48,7 @@ The current reference implementation contains the major building blocks needed f
 - implicit charge-state evolution using preprocessed OpenADAS/ADAS rate tables;
 - JAX sharding helpers and a particle-throughput benchmark driver.
 
-This is a **reference implementation**, not yet a fully validated production release. The validation plan in `docs/validation.md` distinguishes implemented unit tests from the RAMc and published convergence/physics benchmarks that remain to be completed.
+This is a **reference implementation**, not yet a fully validated production release. The validation plan in `docs/validation.md` distinguishes implemented coding tests from the analytical and published physics benchmarks that remain to be completed. Internal RAMc comparisons are identified as implementation cross-checks, not independent scientific validation.
 
 ## Computational model
 
@@ -111,7 +115,7 @@ jonta/
 ├── tests/
 │   ├── unit/              coding/unit contracts
 │   ├── integration/       compiled and serial/parallel execution tests
-│   └── validation/        explicit numerical/physical validation
+│   └── regression/        deterministic software reference cases
 ├── benchmarks/            paper/analytic benchmark drivers and reference data
 ├── examples/
 └── scripts/
@@ -127,7 +131,7 @@ Read these in roughly this order:
 - [`docs/architecture.md`](docs/architecture.md) — module boundaries, state ownership, and JAX/multi-GPU data flow.
 - [`docs/numerics.md`](docs/numerics.md) — Monte Carlo realization, timestepping, resampling, deposition, BDF2, and coupling algorithms.
 - [`docs/conventions.md`](docs/conventions.md) — normalization, signs, units, FP64, coordinates, and array layout.
-- [`docs/validation.md`](docs/validation.md) — required unit, convergence, RAMc, physics, and performance tests.
+- [`docs/validation.md`](docs/validation.md) — required coding, convergence, published-physics, and performance tests.
 - [`docs/installation.md`](docs/installation.md) — CPU/CUDA setup and environment verification.
 - [`docs/benchmarks.md`](docs/benchmarks.md) — reproducible benchmark commands and result policy.
 - [`docs/configuration.md`](docs/configuration.md) — validated YAML schema and benchmark templates.
@@ -155,11 +159,9 @@ python -m pip install -e '.[dev]'
 PYTHONPATH=src pytest -q
 ```
 
-`pytest -q` runs complete coding tests only. Numerical validation is explicit:
-
-```bash
-PYTHONPATH=src pytest -q tests/validation
-```
+`pytest -q` runs the complete coding-test suite only. Physical validation is
+explicit and lives under `benchmarks/`; use the commands in
+[`docs/benchmarks.md`](docs/benchmarks.md).
 
 Paper and analytical comparisons live under `benchmarks/` and are run through
 the commands documented in [`docs/benchmarks.md`](docs/benchmarks.md). They
@@ -172,7 +174,7 @@ python -m pip install -e '.[dev,metal]'
 ```
 
 The Metal JAX plugin is experimental and is suitable only for limited
-float32/device smoke tests. JONTA's production kernels intentionally enable
+float32/backend-availability checks. JONTA's production kernels intentionally enable
 FP64, which the Metal plugin does not support. Use `JAX_PLATFORMS=cpu` for all
 JONTA tests and validation runs:
 
@@ -232,9 +234,9 @@ PYTHONPATH=src python scripts/benchmark_particle_push.py --help
 
 ## Current status and next validation milestones
 
-The software skeleton and reference 0-D/1-D physics kernels are in place. The validation suite now includes guiding-center invariant conservation, Maxwellian relaxation, axisymmetric spatial transport for fully/partially ionized plasmas, the Guo-2017 particle-only runaway-vortex/bump-on-tail benchmark, and the McDevitt-2019 fully ionized large-angle/avalanche benchmark family (growth, threshold, conservative cutoff invariance, and conservative-versus-source-only comparisons). Avalanche growth scans also have an optional Rosenbluth--Legendre analytic warm start, validated against a short-run Fig. B3(a) calculation, to reduce Monte-Carlo burn-in without introducing an auxiliary continuum solver. Before calling JONTA production-ready, the highest-priority remaining work is:
+The software skeleton and reference 0-D/1-D physics kernels are in place. A self-contained Maxwellian-relaxation benchmark is currently reproducible from its checked-in driver and recorded result manifest. Other benchmark families have reference data, specifications, or legacy drivers at different stages of migration; their presence does not constitute completed paper-level validation. Before calling JONTA production-ready, the highest-priority remaining work is:
 
-1. additional deterministic orbit/transport benchmarks from the RAMc papers;
+1. additional deterministic orbit/transport benchmarks against published analytical and numerical results;
 2. Dreicer generation and the partially screened avalanche-threshold benchmark;
 3. manufactured BDF2/current-deposition and nonlinear plasma-coupling tests;
 4. OpenADAS-backed charge-state/radiation datasets and verification;
