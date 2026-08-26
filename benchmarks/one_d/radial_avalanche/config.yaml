@@ -40,7 +40,8 @@ collisions:
     pitch_scattering: true
     friction: true
     energy_scattering: true
-    max_nu_dt: 0.5
+    n_sa: 100
+    p_min: 0.001
   large_angle:
     enabled: true
     gamma_min: 1.02
