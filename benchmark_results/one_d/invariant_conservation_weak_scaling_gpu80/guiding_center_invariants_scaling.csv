@@ -1,0 +1,4 @@
+devices,local_devices,processes,platform,weak_scaling,particles_per_device,total_particles,wall_time_s,speedup,ideal_speedup,parallel_efficiency,pphi_max_rel_error,mu_max_rel_error,finite
+4,1,4,cuda,True,1048576,4194304,0.28636471000208985,1.0,1.0,1.0,1.7730992546777545e-09,0.0,True
+8,2,4,cuda,True,1048576,8388608,0.2885401269995782,0.9924606084425425,1.0,0.9924606084425425,1.734332373362061e-09,0.0,True
+16,4,4,cuda,True,1048576,16777216,0.2910704749992874,0.9838329016462111,1.0,0.9838329016462111,1.751434414819325e-09,0.0,True

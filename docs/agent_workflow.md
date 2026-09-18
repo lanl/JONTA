@@ -72,7 +72,7 @@ XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 
 # explicit physical benchmark (choose the benchmark documented in docs/benchmarks.md)
 PYTHONPATH=src JAX_PLATFORMS=cpu python benchmarks/one_d/invariant_conservation/run.py \
-  --output-dir benchmark_results/one_d/invariant_conservation_cpu
+  --output-dir benchmark_results/one_d/invariant_conservation_gpu
 ```
 
 Coding tests always run at full configured fidelity. Numerical/physical

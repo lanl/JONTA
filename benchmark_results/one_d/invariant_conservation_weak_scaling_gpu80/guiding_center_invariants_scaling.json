@@ -1,0 +1,103 @@
+{
+  "benchmark": "guiding_center_invariants",
+  "mode": "particle_scaling",
+  "command": "/pscratch/sd/j/jsarnaud/git/JONTA/.venv/bin/python /pscratch/sd/j/jsarnaud/git/JONTA/benchmarks/one_d/invariant_conservation/run.py --scaling --platform cuda --distributed --weak-scaling --particles-per-device 1048576 --scaling-devices 1 2 4 --scaling-final-time 1e-5 --scaling-dt 1.28e-7 --scaling-repeats 1 --output-dir /pscratch/sd/j/jsarnaud/git/JONTA/benchmark_results/one_d/invariant_conservation_weak_scaling_gpu80",
+  "backend": "gpu",
+  "jax_devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3",
+    "cuda:4",
+    "cuda:5",
+    "cuda:6",
+    "cuda:7",
+    "cuda:8",
+    "cuda:9",
+    "cuda:10",
+    "cuda:11",
+    "cuda:12",
+    "cuda:13",
+    "cuda:14",
+    "cuda:15"
+  ],
+  "git_commit": "afefd05aae71b3c18d9a71170fde18b8fcee9257",
+  "git_dirty": true,
+  "requested_device_counts": [
+    1,
+    2,
+    4
+  ],
+  "fixed_case": {
+    "integrator": "RK4",
+    "E1_over_Ec": 10.0,
+    "dt_over_tau_c": 1.28e-07,
+    "final_time_over_tau_c": 1e-05,
+    "total_particles": 512,
+    "particles_per_device": 1048576,
+    "timing_repeats_after_warmup": 1
+  },
+  "rows": [
+    {
+      "devices": 4,
+      "local_devices": 1,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 1048576,
+      "total_particles": 4194304,
+      "wall_time_s": 0.28636471000208985,
+      "timing_trials_s": [
+        0.28636471000208985
+      ],
+      "pphi_max_rel_error": 1.7730992546777545e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 1.0,
+      "ideal_speedup": 1.0,
+      "parallel_efficiency": 1.0,
+      "weak_scaling": true
+    },
+    {
+      "devices": 8,
+      "local_devices": 2,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 1048576,
+      "total_particles": 8388608,
+      "wall_time_s": 0.2885401269995782,
+      "timing_trials_s": [
+        0.2885401269995782
+      ],
+      "pphi_max_rel_error": 1.734332373362061e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 0.9924606084425425,
+      "ideal_speedup": 1.0,
+      "parallel_efficiency": 0.9924606084425425,
+      "weak_scaling": true
+    },
+    {
+      "devices": 16,
+      "local_devices": 4,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 1048576,
+      "total_particles": 16777216,
+      "wall_time_s": 0.2910704749992874,
+      "timing_trials_s": [
+        0.2910704749992874
+      ],
+      "pphi_max_rel_error": 1.751434414819325e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "speedup": 0.9838329016462111,
+      "ideal_speedup": 1.0,
+      "parallel_efficiency": 0.9838329016462111,
+      "weak_scaling": true
+    }
+  ],
+  "platform": "cuda",
+  "distributed": true,
+  "process_count": 4,
+  "interpretation": "Device counts partition a fixed total marker workload with pmap. Speedup uses first requested device count as baseline. In distributed mode, each process maps local devices and host barriers report global time."
+}

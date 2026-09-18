@@ -1,4 +1,4 @@
-"""CPU multi-device correctness checks for deterministic particle evolution.
+"""Multi-device correctness checks for deterministic particle evolution.
 
 Run with logical CPU devices exposed before Python starts, for example::
 
@@ -37,7 +37,7 @@ def _advance(kin, profiles, norm):
     return jax.lax.fori_loop(0, 10, body, kin)
 
 
-def test_cpu_particle_partition_matches_single_device_reference():
+def test_particle_partition_matches_single_device_reference():
     """Particle sharding must preserve deterministic orbit trajectories."""
 
     if jax.local_device_count() < 2:

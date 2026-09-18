@@ -11,7 +11,8 @@ from core.state import KinematicState, ParticleState
 
 
 def particle_mesh(devices=None):
-    devices = jax.devices() if devices is None else devices
+    # Mesh is process-local. Multi-host callers coordinate separately.
+    devices = jax.local_devices() if devices is None else devices
     return Mesh(np.asarray(devices), ("particle",))
 
 
@@ -31,9 +32,9 @@ def shard_particles(particles: ParticleState, mesh: Mesh):
 def partition_particles(particles: ParticleState, n_devices: int):
     """Reshape a particle ensemble into equal per-device batches.
 
-    This explicit batch form is useful with ``jax.pmap`` and CPU device
-    emulation.  It does not perform communication or population control; the
-    caller remains responsible for global reductions/resampling.
+    This explicit batch form is useful with ``jax.pmap`` on local devices.
+    It does not perform communication or population control; caller remains
+    responsible for global reductions/resampling.
     """
 
     n_devices = int(n_devices)

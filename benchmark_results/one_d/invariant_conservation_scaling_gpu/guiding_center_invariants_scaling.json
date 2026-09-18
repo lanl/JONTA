@@ -1,0 +1,90 @@
+{
+  "benchmark": "guiding_center_invariants",
+  "mode": "particle_scaling_merged",
+  "platform": "cuda",
+  "input_directories": [
+    "benchmark_results/one_d/invariant_conservation_scaling_gpu_1_2",
+    "benchmark_results/one_d/invariant_conservation_scaling_gpu_4_8_16"
+  ],
+  "rows": [
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 65536,
+      "total_particles": 65536,
+      "wall_time_s": 3.295496134000132,
+      "speedup": 1.0,
+      "ideal_speedup": 1.0,
+      "parallel_efficiency": 1.0,
+      "pphi_max_rel_error": 5.904570680599493e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true
+    },
+    {
+      "devices": 2,
+      "local_devices": 2,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 32768,
+      "total_particles": 65536,
+      "wall_time_s": 3.016819313997985,
+      "speedup": 1.0923743820881455,
+      "ideal_speedup": 2.0,
+      "parallel_efficiency": 0.5461871910440728,
+      "pphi_max_rel_error": 5.904570680599493e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true
+    },
+    {
+      "devices": 4,
+      "local_devices": 1,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 16384,
+      "total_particles": 65536,
+      "wall_time_s": 2.955181879995507,
+      "speedup": 1.0,
+      "ideal_speedup": 4.0,
+      "parallel_efficiency": 0.25,
+      "pphi_max_rel_error": 5.904570680599493e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true
+    },
+    {
+      "devices": 8,
+      "local_devices": 2,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 8192,
+      "total_particles": 65536,
+      "wall_time_s": 2.9992566620057914,
+      "speedup": 0.9853047648210245,
+      "ideal_speedup": 8.0,
+      "parallel_efficiency": 0.12316309560262806,
+      "pphi_max_rel_error": 5.904570680599493e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true
+    },
+    {
+      "devices": 16,
+      "local_devices": 4,
+      "processes": 4,
+      "platform": "cuda",
+      "particles_per_device": 4096,
+      "total_particles": 65536,
+      "wall_time_s": 3.1951972380047664,
+      "speedup": 0.9248824594756047,
+      "ideal_speedup": 16.0,
+      "parallel_efficiency": 0.05780515371722529,
+      "pphi_max_rel_error": 5.904570680599493e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true
+    }
+  ],
+  "input_manifests": [
+    "particle_scaling",
+    "particle_scaling"
+  ]
+}

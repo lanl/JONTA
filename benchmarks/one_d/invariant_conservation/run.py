@@ -70,6 +70,11 @@ from integrators import (
     rk4_step,
 )
 from orbits.ramc_circular import ramc_circular_rhs
+from parallel.distributed import (
+    global_barrier,
+    global_values,
+    initialize_from_environment,
+)
 
 jax.config.update("jax_enable_x64", True)
 
@@ -678,33 +683,56 @@ def _shard_state(kin, n_devices: int):
     return jax.tree_util.tree_unflatten(treedef, sharded)
 
 
-def _run_scaling_case(n_devices: int):
-    """Time fixed RK4 orbit work partitioned across CPU devices with ``pmap``."""
+def _resolve_local_devices(platform):
+    if platform == "auto":
+        return tuple(jax.local_devices())
+    backend = "gpu" if platform == "cuda" else platform
+    return tuple(jax.local_devices(backend=backend))
 
-    cpu_devices = jax.devices("cpu")
-    if jax.default_backend() != "cpu":
-        raise RuntimeError("--scaling requires JAX_PLATFORMS=cpu")
-    if n_devices > len(cpu_devices):
+
+def _slice_state(kin, start, stop):
+    return jax.tree_util.tree_map(lambda value: value[start:stop], kin)
+
+
+def _run_scaling_case(
+    n_devices: int,
+    platform: str,
+    distributed: bool,
+    total_particles: int,
+    final_time: float,
+    dt_requested: float,
+    repeats: int,
+):
+    """Time fixed RK4 orbit work across selected local or global devices."""
+
+    devices = _resolve_local_devices(platform)
+    if n_devices > len(devices):
         raise RuntimeError(
-            f"requested {n_devices} CPU devices, but JAX exposes {len(cpu_devices)}; "
-            "set XLA_FLAGS=--xla_force_host_platform_device_count=N before Python"
+            f"requested {n_devices} {platform} devices, but only "
+            f"{len(devices)} local devices are available"
         )
-    if SCALING_TOTAL_PARTICLES % n_devices:
+    process_count = jax.process_count() if distributed else 1
+    process_index = jax.process_index() if distributed else 0
+    global_devices = n_devices * process_count
+    if total_particles % global_devices:
         raise ValueError(
-            f"fixed scaling workload ({SCALING_TOTAL_PARTICLES}) must divide evenly "
-            f"across {n_devices} devices"
+            f"scaling workload ({total_particles}) must divide evenly "
+            f"across {global_devices} devices"
         )
 
-    total_particles = SCALING_TOTAL_PARTICLES
-    particles_per_device = total_particles // n_devices
     kin, profiles, norm = make_case(
         n_particles=total_particles,
         e1=SCALING_E1,
         seed=17,
     )
+    if process_count > 1:
+        particles_per_process = total_particles // process_count
+        start = process_index * particles_per_process
+        kin = _slice_state(kin, start, start + particles_per_process)
+    particles_per_device = total_particles // global_devices
     sharded_kin = _shard_state(kin, n_devices)
-    n_steps = max(1, int(round(SCALING_FINAL_TIME / SCALING_DT)))
-    dt_actual = SCALING_FINAL_TIME / n_steps
+    n_steps = max(1, int(round(final_time / dt_requested)))
+    dt_actual = final_time / n_steps
     kernel = _make_measure_kernel(rk4_step)
 
     def mapped_fn(dt, steps, state, field_profiles, normalization):
@@ -713,11 +741,10 @@ def _run_scaling_case(n_devices: int):
     mapped_kernel = jax.pmap(
         mapped_fn,
         in_axes=(None, None, 0, None, None),
-        devices=cpu_devices[:n_devices],
+        devices=devices[:n_devices],
     )
 
-    # Compile and synchronize before timing. Compilation and asynchronous
-    # dispatch otherwise dominate short benchmark measurements.
+    global_barrier(distributed, f"invariants-warmup-{n_devices}")
     warmup = mapped_kernel(
         jnp.asarray(dt_actual),
         jnp.asarray(n_steps, dtype=jnp.int32),
@@ -726,10 +753,12 @@ def _run_scaling_case(n_devices: int):
         norm,
     )
     jax.block_until_ready(warmup)
+    global_barrier(distributed, f"invariants-warmup-done-{n_devices}")
 
     timings = []
     result = None
-    for _ in range(SCALING_REPEATS):
+    for _ in range(repeats):
+        global_barrier(distributed, f"invariants-start-{n_devices}")
         start = time.perf_counter()
         result = mapped_kernel(
             jnp.asarray(dt_actual),
@@ -739,7 +768,9 @@ def _run_scaling_case(n_devices: int):
             norm,
         )
         jax.block_until_ready(result)
-        timings.append(time.perf_counter() - start)
+        elapsed = time.perf_counter() - start
+        global_barrier(distributed, f"invariants-done-{n_devices}")
+        timings.append(float(np.max(global_values(elapsed, distributed))))
 
     final_state, _, pphi_error, mu_error, _, _ = result
     state_finite = jnp.all(jnp.stack(jax.tree_util.tree_leaves(final_state)))
@@ -748,20 +779,36 @@ def _run_scaling_case(n_devices: int):
         & jnp.all(jnp.isfinite(pphi_error))
         & jnp.all(jnp.isfinite(mu_error))
     )
+    global_pphi = np.max(global_values(float(jnp.max(pphi_error)), distributed))
+    global_mu = np.max(global_values(float(jnp.max(mu_error)), distributed))
+    global_finite = bool(np.all(global_values(int(finite), distributed)))
     return {
-        "devices": n_devices,
+        "devices": global_devices,
+        "local_devices": n_devices,
+        "processes": process_count,
+        "platform": platform,
         "particles_per_device": particles_per_device,
         "total_particles": total_particles,
         "wall_time_s": float(np.median(timings)),
         "timing_trials_s": [float(value) for value in timings],
-        "pphi_max_rel_error": float(jnp.max(pphi_error)),
-        "mu_max_rel_error": float(jnp.max(mu_error)),
-        "finite": finite,
+        "pphi_max_rel_error": float(global_pphi),
+        "mu_max_rel_error": float(global_mu),
+        "finite": global_finite,
     }
 
 
-def run_scaling(device_counts):
-    """Run strong serial/parallel CPU scaling; device counts must begin with one."""
+def run_scaling(
+    device_counts,
+    platform,
+    distributed,
+    total_particles,
+    final_time,
+    dt_requested,
+    repeats,
+    weak_scaling=False,
+    particles_per_device=None,
+):
+    """Run strong particle scaling on selected local or global devices."""
 
     counts = [int(value) for value in device_counts]
     if not counts or counts[0] != 1:
@@ -769,18 +816,103 @@ def run_scaling(device_counts):
     if any(value < 1 for value in counts) or len(set(counts)) != len(counts):
         raise ValueError("--scaling-devices must contain unique positive counts")
 
-    rows = [_run_scaling_case(count) for count in counts]
+    process_count = jax.process_count() if distributed else 1
+    rows = []
+    for count in counts:
+        case_particles = total_particles
+        if weak_scaling:
+            if particles_per_device is None or particles_per_device < 1:
+                raise ValueError("weak scaling requires positive particles_per_device")
+            case_particles = particles_per_device * count * process_count
+        rows.append(
+            _run_scaling_case(
+                count,
+                platform,
+                distributed,
+                case_particles,
+                final_time,
+                dt_requested,
+                repeats,
+            )
+        )
     serial_time = rows[0]["wall_time_s"]
     for row in rows:
         row["speedup"] = serial_time / row["wall_time_s"]
-        row["ideal_speedup"] = float(row["devices"])
+        row["ideal_speedup"] = 1.0 if weak_scaling else float(row["devices"])
         row["parallel_efficiency"] = row["speedup"] / row["ideal_speedup"]
+        row["weak_scaling"] = weak_scaling
     return rows
+
+
+def run_particle_sweep(particle_counts, platform, final_time, dt_requested, repeats):
+    """Measure fixed RK4 case over marker counts on one local device."""
+
+    rows = []
+    for count in particle_counts:
+        if count < 1:
+            raise ValueError("particle counts must be positive")
+        row = _run_scaling_case(
+            1,
+            platform,
+            False,
+            int(count),
+            final_time,
+            dt_requested,
+            repeats,
+        )
+        row["particle_count"] = int(count)
+        row["markers_per_second"] = count / row["wall_time_s"]
+        rows.append(row)
+    return rows
+
+
+def _write_particle_sweep(path: Path, rows):
+    fields = (
+        "particle_count",
+        "wall_time_s",
+        "markers_per_second",
+        "pphi_max_rel_error",
+        "mu_max_rel_error",
+        "finite",
+        "platform",
+    )
+    with path.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows({field: row[field] for field in fields} for row in rows)
+
+
+def _write_particle_sweep_plot(path: Path, rows):
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return False
+
+    particles = np.asarray([row["particle_count"] for row in rows])
+    runtime = np.asarray([row["wall_time_s"] for row in rows])
+    throughput = np.asarray([row["markers_per_second"] for row in rows])
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.5), constrained_layout=True)
+    axes[0].loglog(particles, runtime, "o-")
+    axes[0].set_xlabel("markers")
+    axes[0].set_ylabel("runtime [s]")
+    axes[0].grid(True, which="both", alpha=0.25)
+    axes[1].semilogx(particles, throughput, "o-")
+    axes[1].set_xlabel("markers")
+    axes[1].set_ylabel("markers/s")
+    axes[1].grid(True, which="both", alpha=0.25)
+    fig.suptitle("Guiding-center invariant benchmark: single-GPU particle sweep")
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return True
 
 
 def _write_scaling_csv(path: Path, rows):
     fields = (
         "devices",
+        "local_devices",
+        "processes",
+        "platform",
+        "weak_scaling",
         "particles_per_device",
         "total_particles",
         "wall_time_s",
@@ -810,18 +942,18 @@ def _write_scaling_plot(path: Path, rows):
     fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.5))
     axes[0].plot(devices, speedup, "o-", label="measured")
     axes[0].plot(devices, ideal, "--", label="ideal")
-    axes[0].set_ylabel("speedup relative to one CPU device")
-    axes[0].set_xlabel("logical CPU devices")
+    axes[0].set_ylabel("speedup relative to baseline")
+    axes[0].set_xlabel("devices")
     axes[0].set_xticks(devices)
     axes[0].grid(True, alpha=0.25)
     axes[0].legend()
     axes[1].plot(devices, efficiency, "o-")
     axes[1].set_ylabel("parallel efficiency")
-    axes[1].set_xlabel("logical CPU devices")
+    axes[1].set_xlabel("devices")
     axes[1].set_xticks(devices)
     axes[1].set_ylim(bottom=0.0)
     axes[1].grid(True, alpha=0.25)
-    fig.suptitle("Guiding-center invariant benchmark: CPU decomposition scaling")
+    fig.suptitle("Guiding-center invariant benchmark: particle scaling")
     fig.tight_layout()
     fig.savefig(path, dpi=180)
     plt.close(fig)
@@ -855,27 +987,30 @@ def _write_scaling_metadata(path: Path, args, rows):
 
     payload = {
         "benchmark": "guiding_center_invariants",
-        "mode": "cpu_scaling",
+        "mode": "particle_scaling",
         "command": " ".join([sys.executable, *sys.argv]),
         "backend": jax.default_backend(),
-        "jax_devices": [str(device) for device in jax.devices("cpu")],
+        "jax_devices": [str(device) for device in jax.devices()],
         "git_commit": git_commit,
         "git_dirty": git_dirty,
         "requested_device_counts": [int(value) for value in args.scaling_devices],
         "fixed_case": {
             "integrator": "RK4",
             "E1_over_Ec": SCALING_E1,
-            "dt_over_tau_c": SCALING_DT,
-            "final_time_over_tau_c": SCALING_FINAL_TIME,
-            "total_particles": SCALING_TOTAL_PARTICLES,
-            "timing_repeats_after_warmup": SCALING_REPEATS,
+            "dt_over_tau_c": args.scaling_dt,
+            "final_time_over_tau_c": args.scaling_final_time,
+            "total_particles": args.scaling_particles,
+            "particles_per_device": args.particles_per_device,
+            "timing_repeats_after_warmup": args.scaling_repeats,
         },
         "rows": rows,
+        "platform": args.platform,
+        "distributed": args.distributed,
+        "process_count": jax.process_count() if args.distributed else 1,
         "interpretation": (
             "Device counts partition a fixed total marker workload with pmap. "
-            "Speedup is measured wall time divided into one-device wall time; ideal "
-            "speedup equals device count. Devices are logical XLA CPU devices and "
-            "do not measure physical-core scaling."
+            "Speedup uses first requested device count as baseline. In distributed "
+            "mode, each process maps local devices and host barriers report global time."
         ),
     }
     path.write_text(json.dumps(payload, indent=2) + "\n")
@@ -987,14 +1122,67 @@ def main():
     parser.add_argument(
         "--scaling",
         action="store_true",
-        help="run fixed CPU serial/parallel scaling case instead of convergence scan",
+        help="run fixed particle scaling case instead of convergence scan",
     )
     parser.add_argument(
         "--scaling-devices",
         nargs="+",
         type=int,
         default=[1],
-        help="logical CPU device counts for --scaling; must start with 1",
+        help="local device counts for --scaling; must start with 1",
+    )
+    parser.add_argument(
+        "--platform",
+        choices=("auto", "cpu", "gpu", "cuda"),
+        default="auto",
+        help="device backend for scaling; auto uses JAX default backend",
+    )
+    parser.add_argument(
+        "--distributed",
+        action="store_true",
+        help="enable multi-process scaling using JAX distributed initialization",
+    )
+    parser.add_argument(
+        "--scaling-particles",
+        type=int,
+        default=SCALING_TOTAL_PARTICLES,
+        help="total fixed marker workload for scaling",
+    )
+    parser.add_argument(
+        "--particles-per-device",
+        type=int,
+        default=None,
+        help="per-device workload for --weak-scaling",
+    )
+    parser.add_argument(
+        "--weak-scaling",
+        action="store_true",
+        help="grow total workload with global device count",
+    )
+    parser.add_argument(
+        "--scaling-final-time",
+        type=float,
+        default=SCALING_FINAL_TIME,
+        help="fixed-case final time for scaling/throughput",
+    )
+    parser.add_argument(
+        "--scaling-dt",
+        type=float,
+        default=SCALING_DT,
+        help="fixed-case timestep for scaling/throughput",
+    )
+    parser.add_argument(
+        "--scaling-repeats",
+        type=int,
+        default=SCALING_REPEATS,
+        help="timed repeats after warmup",
+    )
+    parser.add_argument(
+        "--particle-sweep",
+        nargs="+",
+        type=int,
+        default=None,
+        help="single-device marker counts for runtime/throughput sweep",
     )
     parser.add_argument(
         "--ramc-q-profile",
@@ -1018,17 +1206,76 @@ def main():
     parser.add_argument("--final-time", type=float, default=1.0e-5)
     parser.add_argument("--n-particles", type=int, default=8)
     args = parser.parse_args()
+    if args.distributed:
+        initialize_from_environment()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.particle_sweep is not None:
+        if args.scaling or args.distributed:
+            raise ValueError("--particle-sweep cannot combine with scaling/distributed")
+        rows = run_particle_sweep(
+            args.particle_sweep,
+            args.platform,
+            args.scaling_final_time,
+            args.scaling_dt,
+            args.scaling_repeats,
+        )
+        csv_path = args.output_dir / "guiding_center_invariants_particle_sweep.csv"
+        plot_path = args.output_dir / "guiding_center_invariants_particle_sweep.png"
+        _write_particle_sweep(csv_path, rows)
+        _write_particle_sweep_plot(plot_path, rows)
+        metadata = {
+            "benchmark": "guiding_center_invariants",
+            "mode": "single_device_particle_sweep",
+            "platform": args.platform,
+            "backend": jax.default_backend(),
+            "jax_devices": [str(device) for device in jax.devices()],
+            "particle_counts": [int(value) for value in args.particle_sweep],
+            "fixed_case": {
+                "integrator": "RK4",
+                "E1_over_Ec": SCALING_E1,
+                "dt_over_tau_c": args.scaling_dt,
+                "final_time_over_tau_c": args.scaling_final_time,
+                "timing_repeats": args.scaling_repeats,
+            },
+            "rows": rows,
+        }
+        metadata_path = args.output_dir / "guiding_center_invariants_particle_sweep.json"
+        metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
+        print(f"CSV: {csv_path}")
+        print(f"Plot: {plot_path}")
+        print(f"Metadata: {metadata_path}")
+        return
+
     if args.scaling:
-        rows = run_scaling(args.scaling_devices)
+        if args.scaling_particles < 1:
+            raise ValueError("--scaling-particles must be positive")
+        if args.scaling_final_time <= 0.0 or args.scaling_dt <= 0.0:
+            raise ValueError("scaling final time and timestep must be positive")
+        if args.scaling_repeats < 1:
+            raise ValueError("--scaling-repeats must be positive")
+        if args.weak_scaling and args.particles_per_device is None:
+            raise ValueError("--weak-scaling requires --particles-per-device")
+        rows = run_scaling(
+            args.scaling_devices,
+            args.platform,
+            args.distributed,
+            args.scaling_particles,
+            args.scaling_final_time,
+            args.scaling_dt,
+            args.scaling_repeats,
+            args.weak_scaling,
+            args.particles_per_device,
+        )
+        if args.distributed and jax.process_index() != 0:
+            return
         csv_path = args.output_dir / "guiding_center_invariants_scaling.csv"
         plot_path = args.output_dir / "guiding_center_invariants_scaling.png"
         metadata_path = args.output_dir / "guiding_center_invariants_scaling.json"
         _write_scaling_csv(csv_path, rows)
         _write_scaling_plot(plot_path, rows)
         _write_scaling_metadata(metadata_path, args, rows)
-        print("\nCPU scaling (logical XLA devices)")
+        print("\nParticle scaling")
         print("devices  wall_time_s  speedup  ideal  efficiency")
         for row in rows:
             print(

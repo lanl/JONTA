@@ -21,6 +21,7 @@ Current benchmark families:
   avalanche growth, and avalanche threshold.
 - [`one_d/`](one_d/): invariant conservation, trapped/passing tokamak orbits,
   radial transport, and radial avalanche.
+- [`rpf/`](rpf/): first-passage runaway probability maps in momentum space.
 
 The supplied project PDFs are not redistributed. Each benchmark's
 `reference/metadata.yaml` records the paper DOI, local source-document name,

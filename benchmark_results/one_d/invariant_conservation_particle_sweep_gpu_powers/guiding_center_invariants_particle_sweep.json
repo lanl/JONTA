@@ -1,0 +1,257 @@
+{
+  "benchmark": "guiding_center_invariants",
+  "mode": "single_device_particle_sweep",
+  "platform": "cuda",
+  "backend": "gpu",
+  "jax_devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "particle_counts": [
+    4096,
+    8192,
+    16384,
+    32768,
+    65536,
+    131072,
+    262144,
+    524288,
+    1048576,
+    2097152,
+    4194304,
+    8388608,
+    16777216
+  ],
+  "fixed_case": {
+    "integrator": "RK4",
+    "E1_over_Ec": 10.0,
+    "dt_over_tau_c": 1.28e-07,
+    "final_time_over_tau_c": 1e-05,
+    "timing_repeats": 1
+  },
+  "rows": [
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 4096,
+      "total_particles": 4096,
+      "wall_time_s": 0.06452632199216168,
+      "timing_trials_s": [
+        0.06452632199216168
+      ],
+      "pphi_max_rel_error": 1.6099962296834175e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 4096,
+      "markers_per_second": 63477.97105958651
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 8192,
+      "total_particles": 8192,
+      "wall_time_s": 0.0643795490032062,
+      "timing_trials_s": [
+        0.0643795490032062
+      ],
+      "pphi_max_rel_error": 1.5222729494288697e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 8192,
+      "markers_per_second": 127245.37724848036
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 16384,
+      "total_particles": 16384,
+      "wall_time_s": 0.06266983700334094,
+      "timing_trials_s": [
+        0.06266983700334094
+      ],
+      "pphi_max_rel_error": 1.6000591780229356e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 16384,
+      "markers_per_second": 261433.5824605155
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 32768,
+      "total_particles": 32768,
+      "wall_time_s": 0.06520768901100382,
+      "timing_trials_s": [
+        0.06520768901100382
+      ],
+      "pphi_max_rel_error": 1.6398769722881421e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 32768,
+      "markers_per_second": 502517.42542923713
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 65536,
+      "total_particles": 65536,
+      "wall_time_s": 0.07160926099459175,
+      "timing_trials_s": [
+        0.07160926099459175
+      ],
+      "pphi_max_rel_error": 1.6956973271604035e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 65536,
+      "markers_per_second": 915188.8888358948
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 131072,
+      "total_particles": 131072,
+      "wall_time_s": 0.08760989199799951,
+      "timing_trials_s": [
+        0.08760989199799951
+      ],
+      "pphi_max_rel_error": 1.6590776786263057e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 131072,
+      "markers_per_second": 1496086.7661267396
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 262144,
+      "total_particles": 262144,
+      "wall_time_s": 0.1262423769949237,
+      "timing_trials_s": [
+        0.1262423769949237
+      ],
+      "pphi_max_rel_error": 1.706538063931071e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 262144,
+      "markers_per_second": 2076513.4991916465
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 524288,
+      "total_particles": 524288,
+      "wall_time_s": 0.1828547070035711,
+      "timing_trials_s": [
+        0.1828547070035711
+      ],
+      "pphi_max_rel_error": 1.6910805989821097e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 524288,
+      "markers_per_second": 2867238.1946928
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 1048576,
+      "total_particles": 1048576,
+      "wall_time_s": 0.28330556700529996,
+      "timing_trials_s": [
+        0.28330556700529996
+      ],
+      "pphi_max_rel_error": 1.6912648984068178e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 1048576,
+      "markers_per_second": 3701219.185644819
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 2097152,
+      "total_particles": 2097152,
+      "wall_time_s": 0.5806052190018818,
+      "timing_trials_s": [
+        0.5806052190018818
+      ],
+      "pphi_max_rel_error": 1.7551774665872722e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 2097152,
+      "markers_per_second": 3612010.246144899
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 4194304,
+      "total_particles": 4194304,
+      "wall_time_s": 1.1536859149928205,
+      "timing_trials_s": [
+        1.1536859149928205
+      ],
+      "pphi_max_rel_error": 1.7730992546777545e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 4194304,
+      "markers_per_second": 3635568.351396664
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 8388608,
+      "total_particles": 8388608,
+      "wall_time_s": 2.1797756090090843,
+      "timing_trials_s": [
+        2.1797756090090843
+      ],
+      "pphi_max_rel_error": 1.734332373362061e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 8388608,
+      "markers_per_second": 3848381.4413417634
+    },
+    {
+      "devices": 1,
+      "local_devices": 1,
+      "processes": 1,
+      "platform": "cuda",
+      "particles_per_device": 16777216,
+      "total_particles": 16777216,
+      "wall_time_s": 4.515975611997419,
+      "timing_trials_s": [
+        4.515975611997419
+      ],
+      "pphi_max_rel_error": 1.751434414819325e-09,
+      "mu_max_rel_error": 0.0,
+      "finite": true,
+      "particle_count": 16777216,
+      "markers_per_second": 3715081.178788613
+    }
+  ]
+}

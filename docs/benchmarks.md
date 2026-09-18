@@ -60,13 +60,15 @@ fixed Bogacki--Shampine 5, and adaptive Bogacki--Shampine 5(4). The adaptive
 method is the RAMc-compatible production comparison; the fixed methods are
 used for timestep-convergence studies.
 
-The primary deterministic-orbit scan is:
+The primary deterministic-orbit scan is backend-agnostic. GPU example:
 
 ```bash
-PYTHONPATH=src JAX_PLATFORMS=cpu python \
+PYTHONPATH=src JAX_PLATFORMS=cuda python \
   benchmarks/one_d/invariant_conservation/run.py \
-  --output-dir benchmark_results/one_d/invariant_conservation_cpu
+  --output-dir benchmark_results/one_d/invariant_conservation_gpu
 ```
+
+Use `JAX_PLATFORMS=cpu` and an `_cpu` output directory for CPU reference.
 
 This uses the documented full electric-field and timestep grids in
 [`benchmarks/one_d/invariant_conservation/README.md`](../benchmarks/one_d/invariant_conservation/README.md).
@@ -86,18 +88,19 @@ The driver writes RK4, fixed BS5, and adaptive BS5(4) convergence plots, an
 error-floor plot, a CSV containing actual adjusted timesteps and adaptive
 accept/reject counts, and a JSON scan manifest.
 
-Its CPU decomposition scaling case is:
+Its local GPU scaling case is:
 
 ```bash
-XLA_FLAGS=--xla_force_host_platform_device_count=8 \
-PYTHONPATH=src JAX_PLATFORMS=cpu python \
+PYTHONPATH=src JAX_PLATFORMS=cuda python \
   benchmarks/one_d/invariant_conservation/run.py \
-  --scaling --scaling-devices 1 2 4 8 \
-  --output-dir benchmark_results/one_d/invariant_conservation_scaling_cpu
+  --scaling --platform cuda --scaling-devices 1 2 4 \
+  --output-dir benchmark_results/one_d/invariant_conservation_scaling_gpu
 ```
 
-This keeps total marker work fixed and reports measured versus ideal speedup;
-devices are logical XLA CPU devices, not physical-core measurements.
+This keeps total marker work fixed and reports measured versus ideal speedup.
+`--distributed` enables multi-process scaling. Each process maps local devices;
+host barriers report global wall time. See invariant benchmark README for
+Perlmutter 4-node command.
 
 ## Published McDevitt figures
 

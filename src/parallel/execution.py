@@ -27,9 +27,9 @@ class ExecutionPlan:
 
 def _devices_for_platform(platform: str) -> tuple:
     if platform == "auto":
-        return tuple(jax.devices())
+        return tuple(jax.local_devices())
     if platform == "cpu":
-        return tuple(jax.devices("cpu"))
+        return tuple(jax.local_devices(backend="cpu"))
 
     # JAX commonly exposes CUDA/ROCm accelerators through ``gpu``. The
     # fallbacks keep the selection helper usable with alternative plugins
@@ -37,7 +37,7 @@ def _devices_for_platform(platform: str) -> tuple:
     errors = []
     for backend in ("gpu", "cuda", "rocm", "metal"):
         try:
-            devices = tuple(jax.devices(backend))
+            devices = tuple(jax.local_devices(backend=backend))
         except RuntimeError as exc:
             errors.append(str(exc))
             continue
