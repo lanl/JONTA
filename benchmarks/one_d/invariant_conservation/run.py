@@ -929,7 +929,7 @@ def _write_scaling_csv(path: Path, rows):
         writer.writerows({field: row[field] for field in fields} for row in rows)
 
 
-def _write_scaling_plot(path: Path, rows, efficiency_ymin=0.0):
+def _write_scaling_plot(path: Path, rows, y_limits=None):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -945,13 +945,18 @@ def _write_scaling_plot(path: Path, rows, efficiency_ymin=0.0):
     axes[0].set_ylabel("speedup relative to baseline")
     axes[0].set_xlabel("devices")
     axes[0].set_xticks(devices)
+    if y_limits is not None:
+        axes[0].set_ylim(*y_limits)
     axes[0].grid(True, alpha=0.25)
     axes[0].legend()
     axes[1].plot(devices, efficiency, "o-")
     axes[1].set_ylabel("parallel efficiency")
     axes[1].set_xlabel("devices")
     axes[1].set_xticks(devices)
-    axes[1].set_ylim(bottom=efficiency_ymin)
+    if y_limits is None:
+        axes[1].set_ylim(bottom=0.0)
+    else:
+        axes[1].set_ylim(*y_limits)
     axes[1].grid(True, alpha=0.25)
     fig.suptitle("Guiding-center invariant benchmark: particle scaling")
     fig.tight_layout()
@@ -1276,7 +1281,7 @@ def main():
         _write_scaling_plot(
             plot_path,
             rows,
-            efficiency_ymin=0.5 if args.weak_scaling else 0.0,
+            y_limits=(0.5, 1.5) if args.weak_scaling else None,
         )
         _write_scaling_metadata(metadata_path, args, rows)
         print("\nParticle scaling")
