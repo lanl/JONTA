@@ -137,8 +137,8 @@ Read these in roughly this order:
 - [`docs/benchmarks.md`](docs/benchmarks.md) — reproducible benchmark commands and result policy.
 - [`docs/configuration.md`](docs/configuration.md) — validated YAML schema and benchmark templates.
 - [`docs/code_map.md`](docs/code_map.md) — equation/model-to-source navigation map.
-- [`docs/agent_workflow.md`](docs/agent_workflow.md) — LLM task routing, execution modes, validation ladder, and handoff contract.
-- [`AGENTS.md`](AGENTS.md) — repository-wide rules for human and LLM-assisted development.
+- [`AGENTS.md`](AGENTS.md) — repository-wide rules for all contributors, human or agent-assisted.
+- [`docs/agent_workflow.md`](docs/agent_workflow.md) — optional agent-assisted workflow: task routing, execution modes, validation ladder, and handoff contract.
 
 ## Getting started
 
@@ -160,7 +160,14 @@ python -m pip install -e '.[dev]'
 PYTHONPATH=src pytest -q
 ```
 
-`pytest -q` runs the complete coding-test suite only. Physical validation is
+The canonical full local validation (Ruff, complete coding-test suite, and
+package build on CPU with two emulated XLA devices) is:
+
+```bash
+bash scripts/validate.sh
+```
+
+Neither `pytest -q` nor `scripts/validate.sh` runs physical validation, which is
 explicit and lives under `benchmarks/`; use the commands in
 [`docs/benchmarks.md`](docs/benchmarks.md).
 
@@ -220,6 +227,14 @@ A simple throughput driver is available as:
 ```bash
 PYTHONPATH=src python scripts/benchmark_particle_push.py --help
 ```
+
+## Agent-assisted development (optional)
+
+JONTA needs only Python and the dependencies in `pyproject.toml`. Node.js,
+Docker, Claude Code, Codex, and other coding-agent tools are not required.
+Contributors who use a coding agent should point it at [`AGENTS.md`](AGENTS.md)
+and the provider-neutral [`docs/agent_workflow.md`](docs/agent_workflow.md),
+which layer on the normal workflow above.
 
 ## Development principles
 
