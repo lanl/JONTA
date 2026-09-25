@@ -1,13 +1,11 @@
-# JONTA
+# Just anOther fuNcTionAl pusher (JONTA)
 
-Just anOther fuNcTionAl pusher
+JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for particle transport. JONTA is released (approved for open source under #O5194) under the [MIT License](LICENSE).
 
-Approved for open source under #O5194.
 
-JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for runaway electrons.
+## Applications
+### Relativistic "Runaway" electrons
 
-JONTA is released under the [MIT License](LICENSE). Public contribution,
-security, citation, and reproducibility guidance is linked below.
 
 ## Goals
 
