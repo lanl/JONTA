@@ -4,7 +4,9 @@ JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for particle tran
 
 
 ## Applications
-### Relativistic "Runaway" electrons
+- Vlasov-Fokker-Planck for fast ions in tokamak geometry
+- Vlasov-Fokker-Planck-Boltzmann for relativistic electrons in tokamak geometry
+
 
 
 ## Goals
