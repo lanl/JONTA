@@ -2,6 +2,8 @@
 
 This file is the repository-wide contract for human contributors and LLM coding agents. Read it before modifying `src/`, physics equations, numerical methods, or benchmark cases.
 
+The instructions are tool-neutral: they apply equally to human developers and to any coding agent (Claude Code, Codex, or others). Agent tooling is optional. JONTA is installed, run, tested, benchmarked, and developed with a standard Python environment only; see `docs/installation.md`.
+
 ## 1. Project intent
 
 JONTA is a JAX-based, GPU-accelerated kinetic Monte Carlo code for runaway electrons. The priorities are, in order:
@@ -53,8 +55,8 @@ Do not violate these without an explicit design decision documented in `docs/arc
 
 Lower-level modules must not import `simulation.py` or examples.
 
-The concise LLM entry workflow, task-routing table, validation ladder, benchmark
-policy, and handoff checklist are in `docs/agent_workflow.md`.
+The optional, provider-neutral agent entry workflow, task-routing table, validation
+ladder, benchmark policy, and handoff checklist are in `docs/agent_workflow.md`.
 
 ## 4. JAX and accelerator rules
 
@@ -106,13 +108,17 @@ Use the smallest appropriate level:
 - **physics validation**: RAMc and published runaway-electron benchmarks;
 - **performance tests**: particle-steps/s, RHS evaluations/s, memory/particle, scaling.
 
-Run at minimum:
+Focused checks (Ruff on touched files, a single test module) may be run first while iterating. The canonical full local validation command is:
 
 ```bash
-PYTHONPATH=src pytest -q
+bash scripts/validate.sh
 ```
 
-before delivering a code change. GPU-specific changes should also be tested on at least one CUDA device when available.
+It runs `ruff check src tests`, the complete coding-test suite, and `python -m build` on CPU with two emulated XLA devices. Run it before delivering a code change.
+
+GPU validation is required when a change affects GPU execution, device placement, sharding, precision, or accelerator performance. Run the relevant tests on at least one CUDA device when one is available. If no suitable device is available, state explicitly in the handoff that GPU validation was not run.
+
+Explicit physics benchmarks under `benchmarks/` are separate from coding tests; run the ones relevant to the change as documented in `docs/benchmarks.md`.
 
 ## 9. Documentation expectations
 
@@ -126,15 +132,16 @@ Keep these synchronized with code:
 - `docs/code_map.md`: equation-to-implementation map;
 - `docs/installation.md`: supported environment setup;
 - `docs/benchmarks.md`: reproducible benchmark commands and artifact policy.
-- `docs/agent_workflow.md`: LLM task routing, execution modes, validation, and handoff.
+- `docs/agent_workflow.md`: optional agent-assisted task routing, execution modes, validation, and handoff.
 
 ## 10. Agent workflow
 
 Before editing:
 
-1. read the relevant docs and neighboring modules;
-2. search for existing implementations before creating duplicates;
-3. identify which tests define expected behavior.
+1. inspect `git status`; treat existing uncommitted changes as unrelated work to preserve unless told otherwise;
+2. read the relevant docs and neighboring modules;
+3. search for existing implementations before creating duplicates;
+4. identify which tests define expected behavior.
 
 While editing:
 
@@ -146,9 +153,16 @@ While editing:
 
 After editing:
 
-- run tests;
-- run formatting/linting if available;
+- run focused checks, then `bash scripts/validate.sh`;
+- run GPU validation when relevant and available, or report that it was not run;
+- inspect `git diff` and `git status`; confirm no unrelated files or build artifacts changed;
 - summarize changed files, tests, and any unresolved physics assumptions.
+
+Authority:
+
+- do not commit, push, merge, open pull requests, or take other external actions unless explicitly requested;
+- do not discard, overwrite, stash, or reformat unrelated work;
+- do not add agent-specific configuration, credentials, containers, or launchers to this repository.
 
 ## 11. Anti-patterns
 
